@@ -1,0 +1,624 @@
+{
+  "en": {
+    "executable_sha256": "fa18379fe942ecb5fd69360ede81675ad6bb8b743bef2120305c4b439c732218",
+    "verified": [
+      {
+        "type": "ORG",
+        "name": "ACCESS",
+        "sha256": "a3b8cd2f2f14668241fa4996babac337a8a238cf9b09507740361307ffd04990"
+      },
+      {
+        "type": "ORG",
+        "name": "ANZEN",
+        "sha256": "7973a90c0be6e144294357b4ce603ade91d918bfb45372ecc70ba7ee09249b97"
+      },
+      {
+        "type": "ORG",
+        "name": "BALCONY",
+        "sha256": "b5b9ea6ac72ae9a747128825c6f425e505567313c873b18f05ea8296b759d723"
+      },
+      {
+        "type": "ORG",
+        "name": "BALLOS",
+        "sha256": "dd2a342dc87a821b1ca0c2d4d47b70f189f38023a47da93afe421570eb03bd48"
+      },
+      {
+        "type": "ORG",
+        "name": "BDOWN",
+        "sha256": "2d8298c2d010588a3ac7e4d570f6b043a1ff5a2483147f5157d8ee04b1984bc3"
+      },
+      {
+        "type": "ORG",
+        "name": "CEMETERY",
+        "sha256": "7339e8c88c1597d8465f5b811e26782d9f2924a3d333db5283b6b63bd879da6c"
+      },
+      {
+        "type": "ORG",
+        "name": "CURLY",
+        "sha256": "1955c0490dc7d27c2a56336b4c1353766a9e8277dba76a5121974a1ed9027472"
+      },
+      {
+        "type": "ORG",
+        "name": "DR",
+        "sha256": "2ccdf592ce6c078f0dbbe23533f62c90af5d4420a9251293b8f555fc55009b5e"
+      },
+      {
+        "type": "ORG",
+        "name": "ENDING",
+        "sha256": "0af7acf06b72cc01438dea089825018007460d1bdb0d82105873d5133dc95a17"
+      },
+      {
+        "type": "ORG",
+        "name": "ESCAPE",
+        "sha256": "10de1e6c202595670a7805dc3526c3e54c8dff53b83d44a2f3539c1ae61aa909"
+      },
+      {
+        "type": "ORG",
+        "name": "FANFALE1",
+        "sha256": "c2553f5d9cc8a1ed7858a97a8a388f137f1642ea911106ccb08d82c5e80997ae"
+      },
+      {
+        "type": "ORG",
+        "name": "FANFALE2",
+        "sha256": "2c383aedac4c6c9850f687717b3a53b93cc4b8c5dc5f45511c947355377b17b3"
+      },
+      {
+        "type": "ORG",
+        "name": "FANFALE3",
+        "sha256": "07d0decc688f9bd9ec9997fe0df5f96869dc1ffb641a1104a618caf8706686cf"
+      },
+      {
+        "type": "ORG",
+        "name": "FIREEYE",
+        "sha256": "1868afe6705d6a0e2d5cfeee5751f21e74facb9916e0a9842b0722d038e904a5"
+      },
+      {
+        "type": "ORG",
+        "name": "GAMEOVER",
+        "sha256": "3890de9f6d46e8ae0b42af01ee242064ece68ff689f72f2d9079c030f1814b89"
+      },
+      {
+        "type": "ORG",
+        "name": "GINSUKE",
+        "sha256": "5a04447122a5962c0bc66918f7a0506e52ca7dc895130ba0950bb7bc5e4b3888"
+      },
+      {
+        "type": "ORG",
+        "name": "GRAND",
+        "sha256": "1ddfff8c2b7c71630dd35c78e9f8c9270531e6bf594ead248ab3bd470e866e35"
+      },
+      {
+        "type": "ORG",
+        "name": "GRAVITY",
+        "sha256": "258d4bbc22db7184aa0c0dd27dfd1094c63d88c31ee3e46629b529f756b66607"
+      },
+      {
+        "type": "ORG",
+        "name": "HELL",
+        "sha256": "145380ad0f508fa1ae60489283f42c5dc701483db77c0f2c7bf141c34db81cdd"
+      },
+      {
+        "type": "ORG",
+        "name": "IRONH",
+        "sha256": "6558dcf4bf47963c556887cfec283654c4c3957bb61060014be4208accc44ea6"
+      },
+      {
+        "type": "ORG",
+        "name": "JENKA",
+        "sha256": "c17b633c894ba8e0c83307c2a810c2529759e20cbe3a7c87590743909e14e6b2"
+      },
+      {
+        "type": "ORG",
+        "name": "JENKA2",
+        "sha256": "48773d4c876145f6e031e120e1d5a1d8877aef94e4d0744a8528ab8a5a83cee6"
+      },
+      {
+        "type": "ORG",
+        "name": "KODOU",
+        "sha256": "74ceb3831d1df50d189c2711253db68c1feddfd939036c48c8481365d4042c32"
+      },
+      {
+        "type": "ORG",
+        "name": "LASTBT3",
+        "sha256": "36d8f0ad5b25056417e868e391eb2e5d2527713e5d3bc942ba4bfb892bcb7d10"
+      },
+      {
+        "type": "ORG",
+        "name": "LASTBTL",
+        "sha256": "09f0a62a722e4afc0d29de65739f6b223ec2b3cf69170e88d2f78e34253ba376"
+      },
+      {
+        "type": "ORG",
+        "name": "LASTCAVE",
+        "sha256": "897733be7afd0dfbbd7e1f8d03928e7b28f81432ba7d36736b20af718e436702"
+      },
+      {
+        "type": "ORG",
+        "name": "MARINE",
+        "sha256": "d0901e0e82bd88bd3d27119647251ad186f916c5a504377e8533ec0be31d731b"
+      },
+      {
+        "type": "ORG",
+        "name": "MAZE",
+        "sha256": "695290c6445e40e6b3f8b62ae8a0dc0627e00c9a461cd3020187c55d361b96c4"
+      },
+      {
+        "type": "ORG",
+        "name": "MDOWN2",
+        "sha256": "a0073b43ac796290bc4f644c55b6a5ea7fee95b0397473a25483df74986b6040"
+      },
+      {
+        "type": "ORG",
+        "name": "MURA",
+        "sha256": "3236710fe7b6a870a2c0d0733453f9ea3653207e3e33b32774f10e20f1a2b6dc"
+      },
+      {
+        "type": "ORG",
+        "name": "OSIDE",
+        "sha256": "8b58702e954cffe0d2c0df5cf5fab2dae99b0298a434c560da407fd221675dec"
+      },
+      {
+        "type": "ORG",
+        "name": "PLANT",
+        "sha256": "f8d3edf85b935efc024aa1f3531d414e621dc18b4c90aa8f4caa50d7566295b1"
+      },
+      {
+        "type": "ORG",
+        "name": "QUIET",
+        "sha256": "e7ce050f6873731ff364b895c2d49bd4a365f5cbde99dea7762b2faa5ee0b5c4"
+      },
+      {
+        "type": "ORG",
+        "name": "REQUIEM",
+        "sha256": "34187dfb37755c094b143ec12af31cd02d42b9b62778b2e3d071965394c41e17"
+      },
+      {
+        "type": "ORG",
+        "name": "TOROKO",
+        "sha256": "34986e51fc88ba732c96a6a95b5a33ef44c8c9b4ea06249afcb9f46a23112f0c"
+      },
+      {
+        "type": "ORG",
+        "name": "VIVI",
+        "sha256": "327a1d78be9a216ad379248a25d89971429388010c00af31a6eaac08fe7e8ffe"
+      },
+      {
+        "type": "ORG",
+        "name": "WANPAK2",
+        "sha256": "a9f3329e077b6976dc63545d39afba7729b2076481cc81bae03c8bb1121116df"
+      },
+      {
+        "type": "ORG",
+        "name": "WANPAKU",
+        "sha256": "0da00f1aab4f8a05412c45cb7be328cbf339c9ddd96aec9a9225ca5c8fedd020"
+      },
+      {
+        "type": "ORG",
+        "name": "WEED",
+        "sha256": "eca8daec571e1e20b57982975aa651eee2d043bf0d7a2cf8276e5ba41067701b"
+      },
+      {
+        "type": "ORG",
+        "name": "WHITE",
+        "sha256": "5f3de16d2a3d5df11d83f7bce8e8540b3b36fc8f9fba15d86bbff7cab5564b63"
+      },
+      {
+        "type": "ORG",
+        "name": "XXXX",
+        "sha256": "27b6b0f0ba86d2fa253cbbb40d9fd72340c282292c87ab2be9928e9163c9381c"
+      },
+      {
+        "type": "ORG",
+        "name": "ZONBIE",
+        "sha256": "0dbbe71dbf569cb06bbc54530287b8fbe632490d37e439cd31ef5e982c2f8b82"
+      },
+      {
+        "type": "WAVE",
+        "name": "WAVE100",
+        "sha256": "fa1b3d5f96f4f1fb44fa2089e1ebf2b2645d38cf5b5b7108e8978b5845a9ed1d"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT01",
+        "sha256": "6a99714d9bc9b195ab71fafcc4aee03f22a1c1e5475d5819d6fc155bbdbccb8b"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT02",
+        "sha256": "3e881aaaa5cb543e9c721e78e69789b2355d0257f03c483324e15500050b602b"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT03",
+        "sha256": "7334cd916b58617018ee0703493b71121db5d7ee456a47c79dce3d2a85841ef4"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT04",
+        "sha256": "7176cd04e5c4ef8eeecf42a860bb713c8707d9cdfc4f5da54c348b9bc06fe44e"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT05",
+        "sha256": "9e199cd76044b8fad9b84d83e2160e1b657d4e5f214deb6921a33a1400323499"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT06",
+        "sha256": "78292b89f05cc2695e36bdb9a6d9aec85d2733c6870b2a90298aba4fb431ba31"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT07",
+        "sha256": "a2947448c58773f774940bdcc166b93bb360a14de776320e8e901a26ae1cadb7"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT08",
+        "sha256": "fde54f0e7a790c248138d6f480715464d03d979a7b7401d0dea98233dcaa8d94"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT09",
+        "sha256": "ea52a4d03148acb8cf5f4ce56f3ac3f63d6d3dc8e63595e9f0f703bcd42cdb19"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT10",
+        "sha256": "0c04cdf98d1df0384634cff396e7f6a2b0e869360875abff6e35fba2e9b4025b"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT11",
+        "sha256": "14a199fdf4f011e0352337257e26e8e5b1ea7022f44fc2353fff76f32bdece53"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT12",
+        "sha256": "815d61dcb173a05567355c77fb78c66d34333b510ed6f0c4f2b882e49335c94a"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT14",
+        "sha256": "c570507d2b47b37fa88adbfaac4816f3c9d656ebcd5b7c75c3e0d8a549bedd13"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT15",
+        "sha256": "00e1ba6be2d7597aa6d32e2db4cf0e5d55ea6dc6ee7230bf2ee852c84e1d319d"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT16",
+        "sha256": "81f0b5e6ab539d870849e65f4d4af918d11ebb58ab91382ac5a68b67c3aab13a"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT17",
+        "sha256": "049713f62c77db5b7cc7ef45a9a693b7cd1542bd4de59a074b4d6a0872a99473"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT18",
+        "sha256": "fd039319b2e374bbb65b78feb406649c37128b7beaa4fba2bd7b93146afe05d8"
+      },
+      {
+        "type": "BITMAP",
+        "name": "PIXEL",
+        "sha256": "fee91dfa186c86ccfbdad399743d2b33a678253789d7e54a81db5b172fcf6317"
+      }
+    ],
+    "differences": []
+  },
+  "jp": {
+    "executable_sha256": "e02cc98f5914ec80abe2b6190cf158b889db08ae3fa3eb8074283495e8ad770b",
+    "verified": [
+      {
+        "type": "ORG",
+        "name": "ACCESS",
+        "sha256": "a3b8cd2f2f14668241fa4996babac337a8a238cf9b09507740361307ffd04990"
+      },
+      {
+        "type": "ORG",
+        "name": "ANZEN",
+        "sha256": "7973a90c0be6e144294357b4ce603ade91d918bfb45372ecc70ba7ee09249b97"
+      },
+      {
+        "type": "ORG",
+        "name": "BALCONY",
+        "sha256": "b5b9ea6ac72ae9a747128825c6f425e505567313c873b18f05ea8296b759d723"
+      },
+      {
+        "type": "ORG",
+        "name": "BALLOS",
+        "sha256": "dd2a342dc87a821b1ca0c2d4d47b70f189f38023a47da93afe421570eb03bd48"
+      },
+      {
+        "type": "ORG",
+        "name": "BDOWN",
+        "sha256": "2d8298c2d010588a3ac7e4d570f6b043a1ff5a2483147f5157d8ee04b1984bc3"
+      },
+      {
+        "type": "ORG",
+        "name": "CEMETERY",
+        "sha256": "7339e8c88c1597d8465f5b811e26782d9f2924a3d333db5283b6b63bd879da6c"
+      },
+      {
+        "type": "ORG",
+        "name": "CURLY",
+        "sha256": "1955c0490dc7d27c2a56336b4c1353766a9e8277dba76a5121974a1ed9027472"
+      },
+      {
+        "type": "ORG",
+        "name": "DR",
+        "sha256": "2ccdf592ce6c078f0dbbe23533f62c90af5d4420a9251293b8f555fc55009b5e"
+      },
+      {
+        "type": "ORG",
+        "name": "ENDING",
+        "sha256": "0af7acf06b72cc01438dea089825018007460d1bdb0d82105873d5133dc95a17"
+      },
+      {
+        "type": "ORG",
+        "name": "ESCAPE",
+        "sha256": "10de1e6c202595670a7805dc3526c3e54c8dff53b83d44a2f3539c1ae61aa909"
+      },
+      {
+        "type": "ORG",
+        "name": "FANFALE1",
+        "sha256": "c2553f5d9cc8a1ed7858a97a8a388f137f1642ea911106ccb08d82c5e80997ae"
+      },
+      {
+        "type": "ORG",
+        "name": "FANFALE2",
+        "sha256": "2c383aedac4c6c9850f687717b3a53b93cc4b8c5dc5f45511c947355377b17b3"
+      },
+      {
+        "type": "ORG",
+        "name": "FANFALE3",
+        "sha256": "07d0decc688f9bd9ec9997fe0df5f96869dc1ffb641a1104a618caf8706686cf"
+      },
+      {
+        "type": "ORG",
+        "name": "FIREEYE",
+        "sha256": "1868afe6705d6a0e2d5cfeee5751f21e74facb9916e0a9842b0722d038e904a5"
+      },
+      {
+        "type": "ORG",
+        "name": "GAMEOVER",
+        "sha256": "3890de9f6d46e8ae0b42af01ee242064ece68ff689f72f2d9079c030f1814b89"
+      },
+      {
+        "type": "ORG",
+        "name": "GINSUKE",
+        "sha256": "5a04447122a5962c0bc66918f7a0506e52ca7dc895130ba0950bb7bc5e4b3888"
+      },
+      {
+        "type": "ORG",
+        "name": "GRAND",
+        "sha256": "1ddfff8c2b7c71630dd35c78e9f8c9270531e6bf594ead248ab3bd470e866e35"
+      },
+      {
+        "type": "ORG",
+        "name": "GRAVITY",
+        "sha256": "258d4bbc22db7184aa0c0dd27dfd1094c63d88c31ee3e46629b529f756b66607"
+      },
+      {
+        "type": "ORG",
+        "name": "HELL",
+        "sha256": "145380ad0f508fa1ae60489283f42c5dc701483db77c0f2c7bf141c34db81cdd"
+      },
+      {
+        "type": "ORG",
+        "name": "IRONH",
+        "sha256": "6558dcf4bf47963c556887cfec283654c4c3957bb61060014be4208accc44ea6"
+      },
+      {
+        "type": "ORG",
+        "name": "JENKA",
+        "sha256": "c17b633c894ba8e0c83307c2a810c2529759e20cbe3a7c87590743909e14e6b2"
+      },
+      {
+        "type": "ORG",
+        "name": "JENKA2",
+        "sha256": "48773d4c876145f6e031e120e1d5a1d8877aef94e4d0744a8528ab8a5a83cee6"
+      },
+      {
+        "type": "ORG",
+        "name": "KODOU",
+        "sha256": "74ceb3831d1df50d189c2711253db68c1feddfd939036c48c8481365d4042c32"
+      },
+      {
+        "type": "ORG",
+        "name": "LASTBT3",
+        "sha256": "36d8f0ad5b25056417e868e391eb2e5d2527713e5d3bc942ba4bfb892bcb7d10"
+      },
+      {
+        "type": "ORG",
+        "name": "LASTBTL",
+        "sha256": "09f0a62a722e4afc0d29de65739f6b223ec2b3cf69170e88d2f78e34253ba376"
+      },
+      {
+        "type": "ORG",
+        "name": "LASTCAVE",
+        "sha256": "897733be7afd0dfbbd7e1f8d03928e7b28f81432ba7d36736b20af718e436702"
+      },
+      {
+        "type": "ORG",
+        "name": "MARINE",
+        "sha256": "d0901e0e82bd88bd3d27119647251ad186f916c5a504377e8533ec0be31d731b"
+      },
+      {
+        "type": "ORG",
+        "name": "MAZE",
+        "sha256": "695290c6445e40e6b3f8b62ae8a0dc0627e00c9a461cd3020187c55d361b96c4"
+      },
+      {
+        "type": "ORG",
+        "name": "MDOWN2",
+        "sha256": "a0073b43ac796290bc4f644c55b6a5ea7fee95b0397473a25483df74986b6040"
+      },
+      {
+        "type": "ORG",
+        "name": "MURA",
+        "sha256": "3236710fe7b6a870a2c0d0733453f9ea3653207e3e33b32774f10e20f1a2b6dc"
+      },
+      {
+        "type": "ORG",
+        "name": "OSIDE",
+        "sha256": "8b58702e954cffe0d2c0df5cf5fab2dae99b0298a434c560da407fd221675dec"
+      },
+      {
+        "type": "ORG",
+        "name": "PLANT",
+        "sha256": "f8d3edf85b935efc024aa1f3531d414e621dc18b4c90aa8f4caa50d7566295b1"
+      },
+      {
+        "type": "ORG",
+        "name": "QUIET",
+        "sha256": "e7ce050f6873731ff364b895c2d49bd4a365f5cbde99dea7762b2faa5ee0b5c4"
+      },
+      {
+        "type": "ORG",
+        "name": "REQUIEM",
+        "sha256": "34187dfb37755c094b143ec12af31cd02d42b9b62778b2e3d071965394c41e17"
+      },
+      {
+        "type": "ORG",
+        "name": "TOROKO",
+        "sha256": "34986e51fc88ba732c96a6a95b5a33ef44c8c9b4ea06249afcb9f46a23112f0c"
+      },
+      {
+        "type": "ORG",
+        "name": "VIVI",
+        "sha256": "327a1d78be9a216ad379248a25d89971429388010c00af31a6eaac08fe7e8ffe"
+      },
+      {
+        "type": "ORG",
+        "name": "WANPAK2",
+        "sha256": "a9f3329e077b6976dc63545d39afba7729b2076481cc81bae03c8bb1121116df"
+      },
+      {
+        "type": "ORG",
+        "name": "WANPAKU",
+        "sha256": "0da00f1aab4f8a05412c45cb7be328cbf339c9ddd96aec9a9225ca5c8fedd020"
+      },
+      {
+        "type": "ORG",
+        "name": "WEED",
+        "sha256": "eca8daec571e1e20b57982975aa651eee2d043bf0d7a2cf8276e5ba41067701b"
+      },
+      {
+        "type": "ORG",
+        "name": "WHITE",
+        "sha256": "5f3de16d2a3d5df11d83f7bce8e8540b3b36fc8f9fba15d86bbff7cab5564b63"
+      },
+      {
+        "type": "ORG",
+        "name": "XXXX",
+        "sha256": "27b6b0f0ba86d2fa253cbbb40d9fd72340c282292c87ab2be9928e9163c9381c"
+      },
+      {
+        "type": "ORG",
+        "name": "ZONBIE",
+        "sha256": "0dbbe71dbf569cb06bbc54530287b8fbe632490d37e439cd31ef5e982c2f8b82"
+      },
+      {
+        "type": "WAVE",
+        "name": "WAVE100",
+        "sha256": "fa1b3d5f96f4f1fb44fa2089e1ebf2b2645d38cf5b5b7108e8978b5845a9ed1d"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT01",
+        "sha256": "6a99714d9bc9b195ab71fafcc4aee03f22a1c1e5475d5819d6fc155bbdbccb8b"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT02",
+        "sha256": "3e881aaaa5cb543e9c721e78e69789b2355d0257f03c483324e15500050b602b"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT03",
+        "sha256": "7334cd916b58617018ee0703493b71121db5d7ee456a47c79dce3d2a85841ef4"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT04",
+        "sha256": "7176cd04e5c4ef8eeecf42a860bb713c8707d9cdfc4f5da54c348b9bc06fe44e"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT05",
+        "sha256": "9e199cd76044b8fad9b84d83e2160e1b657d4e5f214deb6921a33a1400323499"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT06",
+        "sha256": "78292b89f05cc2695e36bdb9a6d9aec85d2733c6870b2a90298aba4fb431ba31"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT07",
+        "sha256": "a2947448c58773f774940bdcc166b93bb360a14de776320e8e901a26ae1cadb7"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT08",
+        "sha256": "fde54f0e7a790c248138d6f480715464d03d979a7b7401d0dea98233dcaa8d94"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT09",
+        "sha256": "ea52a4d03148acb8cf5f4ce56f3ac3f63d6d3dc8e63595e9f0f703bcd42cdb19"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT10",
+        "sha256": "0c04cdf98d1df0384634cff396e7f6a2b0e869360875abff6e35fba2e9b4025b"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT11",
+        "sha256": "14a199fdf4f011e0352337257e26e8e5b1ea7022f44fc2353fff76f32bdece53"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT12",
+        "sha256": "815d61dcb173a05567355c77fb78c66d34333b510ed6f0c4f2b882e49335c94a"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT14",
+        "sha256": "c570507d2b47b37fa88adbfaac4816f3c9d656ebcd5b7c75c3e0d8a549bedd13"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT15",
+        "sha256": "00e1ba6be2d7597aa6d32e2db4cf0e5d55ea6dc6ee7230bf2ee852c84e1d319d"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT16",
+        "sha256": "81f0b5e6ab539d870849e65f4d4af918d11ebb58ab91382ac5a68b67c3aab13a"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT17",
+        "sha256": "049713f62c77db5b7cc7ef45a9a693b7cd1542bd4de59a074b4d6a0872a99473"
+      },
+      {
+        "type": "BITMAP",
+        "name": "CREDIT18",
+        "sha256": "fd039319b2e374bbb65b78feb406649c37128b7beaa4fba2bd7b93146afe05d8"
+      },
+      {
+        "type": "BITMAP",
+        "name": "PIXEL",
+        "sha256": "176e9a75b6d36d5ef86368305a4f6d70439be8819fbf0715aa76728b76d05bb8"
+      }
+    ],
+    "differences": []
+  }
+}

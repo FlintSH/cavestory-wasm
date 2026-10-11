@@ -1,0 +1,11 @@
+/build/
+/obj/
+/game/
+/dist/
+/node_modules/
+/test-results/
+/playwright-report/
+/src/Resource/
+*.pyc
+__pycache__/
+.DS_Store

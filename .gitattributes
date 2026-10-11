@@ -1,0 +1,5 @@
+* text=auto
+assets/** -text
+src/** -text
+docs/*-original-readme.txt -text
+tests/fixtures/** -text

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101324">
+<meta name="description" content="Play the original freeware Cave Story in your browser. A complete WebAssembly build based on the CSE2 decompilation.">
+<title>Cave Story · in your browser</title>
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<main>
+<header><div><p class="eyebrow">STUDIO PIXEL · 2004</p><h1>Cave Story<span>in your browser</span></h1></div><a href="https://github.com/FlintSH/cavestory-wasm" target="_blank" rel="noopener">Source ↗</a></header>
+<section class="player" aria-label="Cave Story game">
+<div class="screen" id="screen">
+<canvas id="canvas" width="640" height="480" tabindex="0" aria-label="Cave Story. Arrow keys move; Z jumps; X shoots. Use the controls below for touch."></canvas>
+<div class="cover" id="cover"><img src="icon.png" alt="" width="48" height="48"><h2>A small cave.<br>A very big story.</h2><p>Explore the complete original freeware adventure.</p><label for="language">Language</label><select id="language"><option value="en">English · Aeon Genesis</option><option value="jp">日本語 · Original</option></select><button id="play" class="primary">Play Cave Story</button><p id="status" role="status" aria-live="polite">Your progress stays in this browser.</p></div>
+<div id="paused" hidden>Paused</div>
+</div>
+<div class="toolbar"><button id="pause" disabled>Pause</button><button id="fullscreen" disabled>Fullscreen</button><span id="save-status" role="status">Save at an in-game save point.</span><button id="export" disabled>Export save</button><label class="button" for="import">Import save<input id="import" type="file" accept=".dat" disabled></label></div>
+</section>
+<div class="touch-controls" aria-label="Touch game controls"><div class="dpad"><button data-key="1073741906" aria-label="Move up">↑</button><button data-key="1073741904" aria-label="Move left">←</button><button data-key="1073741905" aria-label="Move down">↓</button><button data-key="1073741903" aria-label="Move right">→</button></div><div class="actions"><button data-key="97">A</button><button data-key="115">S</button><button data-key="113">Items</button><button data-key="119">Map</button><button data-key="120">X · Fire</button><button data-key="122">Z · Jump</button><button data-key="27">Esc</button></div></div>
+<footer><p><b>← ↑ ↓ →</b> Move / interact &nbsp; <b>Z</b> Jump / confirm &nbsp; <b>X</b> Fire / cancel<br><b>A / S</b> Switch weapons &nbsp; <b>Q</b> Inventory &nbsp; <b>W</b> Map &nbsp; <b>Esc</b> Game menu</p><p>Cave Story © Daisuke “Pixel” Amaya. Browser port based on <a href="https://github.com/gameblabla/CSE2/tree/emscripten">CSE2</a> by cuckydev, Clownacy, and contributors. English translation by Aeon Genesis.<br>Keyboard recommended. <a href="https://github.com/FlintSH/cavestory-wasm#build-and-run">Run it yourself ↗</a></p></footer>
+</main>
+</body>
+</html>
