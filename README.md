@@ -6,6 +6,8 @@ The original freeware **Cave Story in your browser**, compiled to WebAssembly fr
 
 ![Cave Story running in the browser](docs/en-gameplay.png)
 
+[Browser recording: original save-point import/save/reload](https://github.com/FlintSH/cavestory-wasm/releases/download/v1.0.0/video.webm).
+
 This builds on an existing CSE2 browser port. It is not an official source release or a new decompilation. See [source, changes, and fidelity](docs/PROVENANCE.md) and [verification](docs/VERIFICATION.md). The original code/assets remain proprietary; see [LICENCE.txt](LICENCE.txt).
 
 ## Build and run
@@ -26,7 +28,7 @@ Arrow keys move; **Z** jumps/confirms; **X** shoots/cancels; **A/S** switch weap
 
 ## Deploy
 
-Upload the contents of **`dist/`** to any static web host. Serve `.wasm` as `application/wasm`. No backend, cross-origin isolation, or runtime dependencies are required.
+Build locally or download [the prebuilt website ZIP](https://github.com/FlintSH/cavestory-wasm/releases/download/v1.0.0/cavestory-wasm-site.zip). Upload the contents of **`dist/`** (or the extracted ZIP) to any static web host. Serve `.wasm` as `application/wasm`. No backend, cross-origin isolation, or runtime dependencies are required.
 
 For GitHub Pages, set **Settings → Pages → Source → GitHub Actions**. The included workflow builds both languages, runs browser tests, and deploys every successful push to `main`.
 
