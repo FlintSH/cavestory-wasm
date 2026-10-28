@@ -144,7 +144,8 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   // low platforms to the floor (row 11 stands on row 12). Walking into the
   // pearl runs #1100. Wait across the room while it falls.
   expect(s.boss.act).toBeGreaterThanOrEqual(500);
-  expect(await page.evaluate(()=>flint.includes('die'))).toBe(true);
+  // The death script sets its act; it dies (and tells the page) on its next tick.
+  await expect.poll(()=>page.evaluate(()=>flint.includes('die')),{timeout:3000}).toBe(true);
   await page.evaluate(()=>caveStory._web_test_boss_move(10,3));
   await page.evaluate(()=>caveStory._web_test_warp(19,11));
   await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(365)),{timeout:10000}).toBe(1);
