@@ -21,8 +21,9 @@ test('hidden fight: boots into the arena, the enderman fights, and its death eve
     for(let y=0;y<15;y++)for(let x=0;x<20;x++)pxm[8+y*20+x]=(x===0||x===19||y===0||y>=12)?1:0;
     fs.writeFile('/data/Stage/Flint.pxm',pxm);
     fs.writeFile('/data/Stage/Flint.pxe',new Uint8Array([0x50,0x58,0x45,0,0,0,0,0]));
-    // Event 100 arms the player and starts the fight; 1000 is the death event.
-    const text='#0100\r\n<AM+0002:0000<BOA0010<FRE<END\r\n#1000\r\n<BOA0100<FL+7777<END\r\n';
+    // Event 100 arms the player (with enough life that a slow runner can't
+    // die to a lunge) and starts the fight; 1000 is the death event.
+    const text='#0100\r\n<AM+0002:0000<ML+0050<LI+0100<BOA0010<FRE<END\r\n#1000\r\n<BOA0100<FL+7777<END\r\n';
     const plain=Uint8Array.from(text,c=>c.charCodeAt(0));const half=plain.length>>1;const key=plain[half];
     fs.writeFile('/data/Stage/Flint.tsc',plain.map((b,i)=>i===half?b:(b+key)&255));
     window.caveStory=game;
@@ -37,13 +38,19 @@ test('hidden fight: boots into the arena, the enderman fights, and its death eve
   let s=await state();
   expect(s.boss.life).toBe(100);
   expect(s.won).toBe(0);
-  // One hit left: face it and shoot.
+  // One hit left: get within the Polar Star's range, face it and shoot.
   await page.evaluate(()=>caveStory._web_test_boss_life(1));
   await expect.poll(async()=>{
     s=await state();
-    if(!s.won){await page.keyboard.press(s.boss.x<s.me.x?'ArrowLeft':'ArrowRight');await page.keyboard.press('KeyX');}
+    expect(s.me.life).toBeGreaterThan(0);
+    if(!s.won){
+      const toward=s.boss.x<s.me.x?'ArrowLeft':'ArrowRight';
+      if(Math.abs(s.boss.x-s.me.x)>64*0x200){await page.keyboard.down(toward);await page.waitForTimeout(120);await page.keyboard.up(toward);}
+      else await page.keyboard.press(toward);
+      await page.keyboard.press('KeyX');
+    }
     return s.won;
-  },{timeout:20000,intervals:[100]}).toBe(1);
+  },{timeout:45000,intervals:[100]}).toBe(1);
   // The death animation then removes the enderman.
   await expect.poll(async()=>(await state()).boss.cond,{timeout:10000}).toBe(0);
   expect(errors).toEqual([]);
