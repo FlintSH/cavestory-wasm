@@ -573,6 +573,16 @@ void ModeAction(MainLoopMeta *meta)
 					HitMyCharMap();
 					HitMyCharNpChar();
 					HitMyCharBoss();
+
+					// fl1nt.dev's /dev/null is open to the sky, and a maxed
+					// Machine Gun can fly you over its walls. Fall out of the
+					// map and you're never seen again (Head.tsc's event 42).
+					if (gWebFight && gMC.cond & 0x80 && !(g_GameFlags & 4) && gMC.y > (gMap.length * 0x10 + 0x40) * 0x200)
+					{
+						gMC.cond = 0;
+						StartTextScript(42);
+					}
+
 					HitNpCharMap();
 					HitBossMap();
 					HitBulletMap();
