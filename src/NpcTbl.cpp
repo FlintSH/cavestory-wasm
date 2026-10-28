@@ -473,4 +473,5 @@ NPCFUNCTION gpNpcFuncTbl[NPC_FLINT_FIRST + NPC_FLINT_COUNT] =
 	ActNpc366,
 	ActNpc367,
 	ActNpc368,
+	ActNpc369,
 };

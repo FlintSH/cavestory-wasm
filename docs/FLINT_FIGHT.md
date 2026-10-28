@@ -8,7 +8,7 @@
 - Stage 95 (`"/dev/null"`) is appended to the stage table: tileset `PrtFlint`, map `Flint`, background `bkFlint` with background type 8, NPC sheets `Void` and `Flint`, boss 10.
 - Stage 96 (`"lost+found"`), a secret room the level reaches through a hidden End gateway, follows it: tileset `PrtFound`, map `Found`, the same background and NPC sheets, no boss.
 - Background type 8 (`Back.cpp`) draws two layers from one 320x240 image: the top half is a sky that tiles and drifts at a quarter of the camera's speed; the bottom half is a band of distant islands (black is see-through) at half speed, riding higher as the camera goes down.
-- NPC codes 361-368 (`NpcFlint.cpp`) are the level's creatures and effects. Their table rows are built in and appended when `npc.tbl` has the original 361 entries, so the data files are unchanged:
+- NPC codes 361-369 (`NpcFlint.cpp`) are the level's creatures and effects. Their table rows are built in and appended when `npc.tbl` has the original 361 entries, so the data files are unchanged:
 
 | Code | | Sheet |
 | --- | --- | --- |
@@ -19,16 +19,35 @@
 | 365 | Ender Pearl: dropped by the enderman, runs its event when touched | `Void`, y 136 |
 | 366 | End gateway: runs its event when touched. Opened by a script (`<CNP`) it appears with a burst and a sound; placed in a map with the alternate direction, it's simply there | `Void`, y 168 |
 | 367 | End rod: a flickering light | `Void`, y 152 |
-| 368 | Block shard | `Flint`, y 192 |
+| 368 | Shard: End Stone, purpur or a scrap of the page (direction picks) | `Flint`, y 192; page scraps `Void`, y 64 |
+| 369 | A piece of fl1nt.dev the enderman threw in: card, link, logo, avatar, stat or badge (direction picks). Falls, hurts, and breaks into scraps when it lands | `Void`, y 32 |
 
 - Boss 10 (`BossFlint.cpp`) is the enderman. It reads its room from the map: event 300's marker is the room's centre, 0x41 tiles are its ceiling, walls, floor and pillars, and the low 0x05 platforms are what it pulls blocks out of (they come back after a while). Event 330 is where it waits, 320 its perch, 310-313 where its crystals grow.
   - The script plays the introduction with `<BOA0010` (turn), `<BOA0020` (glare), `<BOA0030` (scream) and `<BOA0100` (fight).
   - First phase: it stalks you and swipes, teleports beside you, and throws blocks it takes from the platforms. Staring at it for too long makes it scream and appear behind you.
-  - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Destroying them (they explode) knocks it down, stunned.
-  - At a third it runs event 1020 and enrages: faster, multiple throws, shadows that dash across the room.
+  - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Each crystal beams at it and heals it a point about every half second, up to its full life. Destroying them (they explode) knocks it down, stunned.
+  - At a third it runs event 1020 and screams until the screen cracks, then climbs out of the room through the top. The website takes it from there (below): the game shrinks into a window on fl1nt.dev, and the enderman is out on the site. From outside it throws pieces of the page in (code 369), reaches in with its hand (boss part 11: it hangs over you, slams down, sits, then drags across the floor; hits on the hand hurt the enderman), or tips the room so you slide. After a few attacks it drops back in, enraged (faster, multiple throws, shadows that dash across the room), and leaves again after about eight seconds or 20 damage. At 75, 50 and 25 life it tears more of the site apart, stays out longer and attacks faster, and bits of the room's ceiling fall.
   - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which falls through the platforms to the floor and runs event 1100 when touched.
 - `web_flag(n)` exposes script flags, so the page can see when the level is won and left.
-- QA builds (`--test-hooks`) add `web_test_boss()`, `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)` and `web_test_boss_move(x, y)`.
+- In fight mode the boss tells the page what it's doing by calling `Module.onFlint(name, a, b)`, if the page set one. Positions are in screen pixels (320x240):
+
+| Event | a, b | |
+| --- | --- | --- |
+| `reset` | | The fight is set up: a new game, or the retry after a death |
+| `break` | x, y | The scream that cracks the screen, where it is |
+| `crack` | x, y | Twice more while it screams |
+| `out` | x | It has left the room |
+| `throw` | kind, x | It threw a piece of the page (kind 0-5, code 369's direction), which falls in at x about a second later |
+| `reach`, `slam`, `unreach` | x | Its hand comes in, slams down, and goes back out |
+| `tilt`, `untilt` | direction | It tips the room (1 right, -1 left), and lets go |
+| `in` | x | It drops back into the room |
+| `hurt` | life, outside | It took damage |
+| `crumble` | 1-3 | At 75, 50 and 25 life |
+| `stared` | | It noticed you (below) |
+| `die` | x, y | Its death, in the last phase |
+
+- `web_fight_stare()`: the page calls this when the visitor's cursor rests on the enderman while it's outside. If it isn't busy, it reaches in for you.
+- QA builds (`--test-hooks`) add `web_test_boss()` (including its hand), `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)` and `web_test_boss_move(x, y)`.
 
 ## Page side (FlintSH/web)
 
@@ -41,8 +60,8 @@ The website writes these into `/data` before calling `main()`. None of the origi
 | `Stage/Flint.pxm`, `Stage/Flint.pxe`, `Stage/Flint.tsc` | The map, its entities (including the markers above) and its script |
 | `Stage/PrtFound.pbm`, `Stage/Found.pxa`, `Stage/Found.pxm`, `Stage/Found.pxe`, `Stage/Found.tsc` | The same for lost+found |
 | `bkFlint.pbm` | 320x240 background for type 8 |
-| `Npc/NpcVoid.pbm` | 320x240: the creatures and effects (codes 361-367) |
+| `Npc/NpcVoid.pbm` | 320x240: the creatures and effects (codes 361-367); the enderman's hand (32x32, open at x 80, flat at x 112) and arm (16x16, x 144) at y 0; the six page pieces at y 32 (x 80-263) and their scraps (8x8, x 80) at y 64 |
 | `Npc/NpcFlint.pbm` | 320x240: the enderman's twenty 32x48 poses, ten to a row, facing left then right (y 0-191); its block (16x16, four turns), shards (8x8) and crystal (16x24, four frames, x 128) at y 192 |
 | `Face.pbm`, `ItemImage.pbm`, `ArmsItem.tsc` | Faces for the message box, item pictures, and the inventory's descriptions (these replace the originals for this visit only) |
 
-`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, a script event takes you to stage 96 and back, the enderman goes through its phases, its pearl falls from its perch to the floor, and falling out of the map is a death you can retry from.
+`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, a script event takes you to stage 96 and back, the enderman goes through its phases (its crystals heal it; in the last it leaves the room with the page's events, reaches in when stared at, is hurt through its hand and drops back in), its pearl falls from its perch to the floor, and falling out of the map is a death you can retry from, which resets the page.

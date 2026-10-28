@@ -10,6 +10,7 @@
 #include "ArmsItem.h"
 #include "Back.h"
 #include "Boss.h"
+#include "BossFlint.h"
 #include "BossLife.h"
 #include "BulHit.h"
 #include "Bullet.h"
@@ -613,6 +614,7 @@ void ModeAction(MainLoopMeta *meta)
 				GetFramePosition(&frame_x, &frame_y);
 				PutBack(frame_x, frame_y);
 				PutStage_Back(frame_x, frame_y);
+				PutFlintExtras(frame_x, frame_y);
 				PutBossChar(frame_x, frame_y);
 				PutNpChar(frame_x, frame_y);
 				PutBullet(frame_x, frame_y);

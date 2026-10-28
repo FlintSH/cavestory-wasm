@@ -8,9 +8,20 @@
 #include "KeyControl.h"
 #include "Flags.h"
 #include "Web.h"
+#include "BossFlint.h"
 extern SDL_AudioDeviceID audioDevice;
 
 int gWebFight = 0;
+
+EM_JS(void, flint_emit_js, (const char *name, int a, int b), {
+    if (typeof Module.onFlint === 'function') {
+        try { Module.onFlint(UTF8ToString(name), a, b); } catch (error) { console.error(error); }
+    }
+});
+
+void FlintEmit(const char *name, int a, int b) {
+    if (gWebFight) flint_emit_js(name, a, b);
+}
 
 extern "C" {
 // Call before main(): boot into fl1nt.dev's hidden fight instead of the game.
@@ -20,6 +31,11 @@ EMSCRIPTEN_KEEPALIVE void web_fight(int on) {
 // Lets the page see script flags, e.g. the fight's victory flag.
 EMSCRIPTEN_KEEPALIVE int web_flag(int no) {
     return (no < 0 || no >= 8000) ? 0 : GetNPCFlag(no);
+}
+// The page saw the player's own cursor resting on the enderman, out on the
+// site: it reacts as it does to being stared at.
+EMSCRIPTEN_KEEPALIVE void web_fight_stare() {
+    FlintBossStare();
 }
 EMSCRIPTEN_KEEPALIVE void web_pause(int pause) {
     gKey = gKeyTrg = 0;
@@ -74,12 +90,14 @@ EMSCRIPTEN_KEEPALIVE int web_test_credits() { g_GameFlags |= 8; return StartCred
 EMSCRIPTEN_KEEPALIVE void web_test_illustration(int n) { SetCreditIllust(n); }
 // fl1nt.dev's hidden fight: inspect the enderman and set its life.
 EMSCRIPTEN_KEEPALIVE const char *web_test_boss() {
-    static char state[200];
+    static char state[300];
     int crystals = 0, blocks = 0;
     for (int i = 5; i < 9; i++) if (gBoss[i].cond & 0x80) ++crystals;
     for (int i = 1; i < 4; i++) if (gBoss[i].cond & 0x80) ++blocks;
-    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"phase\":%d,\"crystals\":%d,\"blocks\":%d,\"bits\":%d}",
-        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, FlintBossPhase(), crystals, blocks, gBoss[0].bits);
+    const NPCHAR *hand = &gBoss[11]; // the hand it reaches in with in the last phase
+    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"phase\":%d,\"crystals\":%d,\"blocks\":%d,\"bits\":%d,\"hand\":{\"cond\":%d,\"x\":%d,\"y\":%d,\"damage\":%d}}",
+        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, FlintBossPhase(), crystals, blocks, gBoss[0].bits,
+        hand->cond, hand->x, hand->y, hand->damage);
     return state;
 }
 EMSCRIPTEN_KEEPALIVE void web_test_boss_life(int life) { gBoss[0].life = life; }
