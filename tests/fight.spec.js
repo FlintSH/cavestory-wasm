@@ -79,11 +79,30 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   await expect.poll(async()=>(await state()).boss.life,{timeout:5000}).toBeGreaterThan(150);
   await page.evaluate(()=>{caveStory._web_test_boss_part(5,0);caveStory._web_test_boss_part(6,0);});
   await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBe(220);
-  // Rage, then one hit left: get in range, face it and shoot.
+  // Rage. From here the website draws the fight outside the game too, from
+  // the events the engine sends it (Module.onFlint): it screams until the
+  // screen cracks, and climbs out of the room.
+  await page.evaluate(()=>{window.flint=[];caveStory.onFlint=name=>flint.push(name);});
   await page.evaluate(()=>caveStory._web_test_boss_life(100));
   await expect.poll(async()=>(await state()).boss.phase,{timeout:15000}).toBe(3);
-  await page.evaluate(()=>caveStory._web_test_boss_life(1));
+  await expect.poll(()=>page.evaluate(()=>flint.slice(0,4).join(' ')),{timeout:15000}).toBe('break crack crack out');
+  // Out there it throws pieces of the page in, reaches in or tips the room.
+  // Staring at it (the page's cursor resting on it) makes it reach for you;
+  // shooting its hand once it's slammed down hurts it.
+  await expect.poll(async()=>{
+    await page.evaluate(()=>caveStory._web_fight_stare());
+    return page.evaluate(()=>flint.includes('stared'));
+  },{timeout:20000,intervals:[250]}).toBe(true);
+  await expect.poll(async()=>(await state()).boss.hand.damage,{timeout:5000,intervals:[50]}).toBe(2);
   const hold=async(key,ms)=>{await page.keyboard.down(key);await page.waitForTimeout(ms);await page.keyboard.up(key);};
+  s=await state();
+  const life=s.boss.life;
+  await hold(s.boss.hand.x<s.me.x?'ArrowLeft':'ArrowRight',20);
+  await expect.poll(async()=>{await hold('KeyX',60);return (await state()).boss.life;},{timeout:3000,intervals:[50]}).toBeLessThan(life);
+  await expect.poll(()=>page.evaluate(()=>flint.includes('hurt')),{timeout:2000}).toBe(true);
+  // One hit left. It drops back into the room to fight: get in range, face it and shoot.
+  await page.evaluate(()=>caveStory._web_test_boss_life(1));
+  await expect.poll(()=>page.evaluate(()=>flint.includes('in')),{timeout:60000}).toBe(true);
   await expect.poll(async()=>{
     s=await state();
     expect(s.me.life).toBeGreaterThan(0);
@@ -99,6 +118,7 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   // low platforms to the floor (row 11 stands on row 12). Walking into the
   // pearl runs #1100. Wait across the room while it falls.
   expect(s.boss.act).toBeGreaterThanOrEqual(500);
+  expect(await page.evaluate(()=>flint.includes('die'))).toBe(true);
   await page.evaluate(()=>caveStory._web_test_boss_move(10,3));
   await page.evaluate(()=>caveStory._web_test_warp(19,11));
   await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(365)),{timeout:10000}).toBe(1);
@@ -124,5 +144,7 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
     if(s.me.flags&4)await hold('KeyZ',80);
     return s.me.stage===95&&(s.me.x>>13)===4&&(s.me.flags&2)&&s.me.life>0?1:0;
   },{timeout:40000,intervals:[400]}).toBe(1);
+  // The retry tells the page to put itself back together.
+  expect(await page.evaluate(()=>flint.includes('reset'))).toBe(true);
   expect(errors).toEqual([]);
 });

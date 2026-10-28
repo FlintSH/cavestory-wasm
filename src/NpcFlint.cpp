@@ -40,6 +40,7 @@ const NPC_TABLE gFlintNpcTable[NPC_FLINT_COUNT] = {
 	{npc_eventTouch | npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_1, 0, 0, 0, 0, 0, {8, 16, 8, 24}, {16, 24, 16, 24}}, // end gateway
 	{npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_1, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {8, 8, 8, 8}}, // end rod
 	{npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_2, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {4, 4, 4, 4}}, // block shard
+	{npc_shootable, 3, SURFACE_ID_LEVEL_SPRITESET_1, 31, 12, 1, 1, 2, {6, 4, 6, 6}, {8, 8, 8, 8}}, // page piece
 };
 
 static void SetRect(NPCHAR *npc, int left, int top, int width, int height)
@@ -443,8 +444,11 @@ void ActNpc368(NPCHAR *npc)
 	if (npc->act_no == 0)
 	{
 		npc->act_no = 1;
-		npc->count1 = (npc->direct & 1);
+		npc->count1 = npc->direct % 3;
 		npc->act_wait = Random(28, 44);
+		// Torn-up page comes off fl1nt.dev's own sheet.
+		if (npc->count1 == SHARD_PAGE)
+			npc->surf = SURFACE_ID_LEVEL_SPRITESET_1;
 	}
 
 	npc->ym += 0x24;
@@ -466,5 +470,52 @@ void ActNpc368(NPCHAR *npc)
 		return;
 	}
 
-	SetRect(npc, 64 + (npc->count1 * 4 + npc->ani_no) * 8, 192, 8, 8);
+	if (npc->count1 == SHARD_PAGE)
+		SetRect(npc, 80 + npc->ani_no * 8, 64, 8, 8);
+	else
+		SetRect(npc, 64 + (npc->count1 * 4 + npc->ani_no) * 8, 192, 8, 8);
+}
+
+// A piece of fl1nt.dev the enderman tore off the site and threw in, through
+// the top of the screen: it falls, and breaks where it lands. Shooting it
+// breaks it too. Its direction is which piece it is (PIECE_*).
+static const struct { int x, y, w, h; } kPieces[PIECE_KINDS] = {
+	{80, 32, 32, 24}, // a card
+	{112, 32, 24, 12}, // a nav link
+	{136, 32, 48, 16}, // the logo
+	{184, 32, 24, 24}, // the avatar
+	{208, 32, 32, 16}, // a visit counter
+	{240, 32, 24, 8}, // a badge
+};
+
+void ActNpc369(NPCHAR *npc)
+{
+	const int kind = npc->direct % PIECE_KINDS;
+
+	if (npc->act_no == 0)
+	{
+		npc->act_no = 1;
+		npc->view.front = npc->view.back = PX(kPieces[kind].w / 2);
+		npc->view.top = npc->view.bottom = PX(kPieces[kind].h / 2);
+		npc->hit.front = npc->hit.back = PX(kPieces[kind].w / 2 - 2);
+		npc->hit.top = npc->hit.bottom = PX(kPieces[kind].h / 2 - 1);
+	}
+
+	npc->ym += 0x28;
+	if (npc->ym > 0x600)
+		npc->ym = 0x600;
+	npc->x += npc->xm;
+	npc->y += npc->ym;
+
+	// Breaks on the floor, a platform or a wall.
+	if (npc->flag & 0xD)
+	{
+		for (int i = 0; i < 6; i++)
+			SetNpChar(NPC_BLOCK_SHARD, npc->x + PX(Random(-8, 8)), npc->y + PX(Random(-4, 4)), Random(-0x300, 0x300), Random(-0x500, -0x100), SHARD_PAGE, NULL, 0x100);
+		PlaySoundObject(12, 1);
+		npc->cond = 0;
+		return;
+	}
+
+	SetRect(npc, kPieces[kind].x, kPieces[kind].y, kPieces[kind].w, kPieces[kind].h);
 }
