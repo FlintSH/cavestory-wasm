@@ -34,10 +34,10 @@ for lang in langs:
     flags = ['-std=c++11', '-O0' if args.debug else '-O2', '-fwrapv', '-fno-strict-aliasing',
              '-sUSE_SDL=2', '-sUSE_FREETYPE=1', '-Isrc']
     if lang == 'jp': flags += ['-DJAPANESE']
-    exports=['_main','_web_state','_web_key','_web_pause']
+    exports=['_main','_web_state','_web_key','_web_pause','_web_fight','_web_flag']
     if args.test_hooks:
         flags += ['-DWEB_TEST_HOOKS']
-        exports += ['_web_test_stage','_web_test_credits','_web_test_illustration','_web_test_load','_web_test_stats','_web_test_step','_web_test_credit_step','_web_test_save']
+        exports += ['_web_test_stage','_web_test_credits','_web_test_illustration','_web_test_load','_web_test_stats','_web_test_step','_web_test_credit_step','_web_test_save','_web_test_boss','_web_test_boss_life']
     if args.debug: flags += ['-g', '-sASSERTIONS=2', '-sSAFE_HEAP=1']
     sources = sorted(Path('src').glob('*.cpp'))
     # Warm the SDK ports once before parallel compilation.

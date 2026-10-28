@@ -6,7 +6,7 @@
 extern NPCHAR gBoss[BOSS_MAX];
 
 typedef void (*BOSSFUNCTION)(void);
-extern BOSSFUNCTION gpBossFuncTbl[10];
+extern BOSSFUNCTION gpBossFuncTbl[11];
 
 void InitBossChar(int code);
 void PutBossChar(int fx, int fy);
