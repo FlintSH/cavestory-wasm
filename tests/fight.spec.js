@@ -56,12 +56,14 @@ test('hidden level: boots into stage 95, the enderman goes through its phases, a
   await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBeGreaterThanOrEqual(110);
   s=await state();
   expect([s.boss.life,s.boss.phase]).toEqual([300,1]);
-  // Second phase: crystals, and it can't be hurt until they're gone.
+  // Second phase: crystals that heal it until they're gone.
   await page.evaluate(()=>caveStory._web_test_boss_life(200));
   await expect.poll(async()=>(await state()).boss.crystals,{timeout:15000}).toBe(2);
   s=await state();
   expect(s.boss.phase).toBe(2);
-  expect(s.boss.bits&0x04).toBe(0x04);
+  await expect.poll(async()=>(await state()).boss.act,{timeout:5000}).toBe(210);
+  await page.evaluate(()=>caveStory._web_test_boss_life(150));
+  await expect.poll(async()=>(await state()).boss.life,{timeout:5000}).toBeGreaterThan(150);
   await page.evaluate(()=>{caveStory._web_test_boss_part(5,0);caveStory._web_test_boss_part(6,0);});
   await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBe(220);
   // Rage, then one hit left: get in range, face it and shoot.

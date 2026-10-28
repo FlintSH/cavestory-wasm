@@ -23,7 +23,7 @@
 - Boss 10 (`BossFlint.cpp`) is the enderman. It reads its room from the map: event 300's marker is the room's centre, 0x41 tiles are its ceiling, walls, floor and pillars, and the low 0x05 platforms are what it pulls blocks out of (they come back after a while). Event 330 is where it waits, 320 its perch, 310-313 where its crystals grow.
   - The script plays the introduction with `<BOA0010` (turn), `<BOA0020` (glare), `<BOA0030` (scream) and `<BOA0100` (fight).
   - First phase: it stalks you and swipes, teleports beside you, and throws blocks it takes from the platforms. Staring at it for too long makes it scream and appear behind you.
-  - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it and make it invulnerable while it throws blocks and summons endermites. Destroying them (they explode) knocks it down, stunned.
+  - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Destroying them (they explode) knocks it down, stunned.
   - At a third it runs event 1020 and enrages: faster, multiple throws, shadows that dash across the room.
   - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which runs event 1100.
 - `web_flag(n)` exposes script flags, so the page can see when the level is won and left.

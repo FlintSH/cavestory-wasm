@@ -404,7 +404,10 @@ static void ActBlocks(void)
 
 		int px = block->x - gMC.x, py = block->y - gMC.y;
 		BOOL hitPlayer = px > -PX(12) && px < PX(12) && py > -PX(14) && py < PX(14);
-		if (Solid(GetAttribute(TileOf(block->x), TileOf(block->y))) || block->y > arena.floor + PX(32) || hitPlayer)
+		// Like bullets, blocks pass through platforms (0x05); walls, the floor
+		// and ledges break them.
+		unsigned char under = GetAttribute(TileOf(block->x), TileOf(block->y));
+		if (under == 0x41 || under == 0x43 || block->y > arena.floor + PX(32) || hitPlayer)
 		{
 			if (hitPlayer && !(gMC.cond & 2))
 				DamageMyChar(block->damage);
@@ -713,13 +716,15 @@ static void Strike(NPCHAR *npc, BOOL on)
 
 	memset(swipe, 0, sizeof(*swipe));
 	swipe->cond = 0x80;
+	// Contact is checked against a small box at the player's centre, so the
+	// reach runs from above its head down to just over the floor.
 	swipe->x = npc->x + (npc->direct == 0 ? -PX(20) : PX(20));
-	swipe->y = npc->y - PX(6);
+	swipe->y = npc->y;
 	swipe->damage = 3;
 	swipe->bits = npc_ignoreSolid;
 	swipe->hit.front = swipe->hit.back = PX(14);
-	swipe->hit.top = PX(16);
-	swipe->hit.bottom = PX(16);
+	swipe->hit.top = PX(22);
+	swipe->hit.bottom = PX(22);
 }
 
 static void Die(NPCHAR *npc)
@@ -1016,7 +1021,9 @@ void ActBossChar_Enderman(void)
 
 			if (++npc->act_wait == 10)
 			{
-				ChangeMapParts(s->x, s->y, 0);
+				// Leave the backdrop behind it (the cell above's), not a hole to the sky.
+				unsigned char behind = s->y > 0 ? gMap.data[s->x + (s->y - 1) * gMap.width] : 0;
+				ChangeMapParts(s->x, s->y, GetAttribute(s->x, s->y - 1) < 0x20 ? behind : 0);
 				s->wait = arena.phase == 3 ? 300 : 420;
 				SetMoteBurst(PX(s->x * 16), PX(s->y * 16), 6, 0x300, MOTE_PURPLE);
 				PlaySoundObject(12, 1);
@@ -1077,13 +1084,13 @@ void ActBossChar_Enderman(void)
 			break;
 
 		case ACT_CRYSTALS:
-			// The second phase: crystals grow and it guards them, healing.
+			// The second phase: crystals grow and heal it while it guards them.
 			SetFrame(npc, FRAME_SCREAM);
 			Tremble(npc);
 			if (npc->act_wait == 0)
 			{
 				arena.phase = 2;
-				npc->bits = (npc->bits & ~npc_shootable) | npc_invulnerable;
+				Vulnerable(npc, TRUE);
 				npc->damage = 2;
 				SetQuake(40);
 				PlaySoundObject(26, 1);
@@ -1103,8 +1110,17 @@ void ActBossChar_Enderman(void)
 			FacePlayer(npc);
 			int beat = ++npc->act_wait % 90;
 
-			if (npc->act_wait % 24 == 0 && npc->life < kPhase2Life)
-				npc->life += 1;
+			// Each crystal heals it a little; shoot them down first.
+			int crystals = 0;
+			for (int i = 0; i < arena.crystalCount; i++)
+				if (gBoss[PART_CRYSTAL + i].cond & 0x80)
+					++crystals;
+			if (npc->act_wait % 20 == 0)
+			{
+				npc->life += crystals;
+				if (npc->life > kPhase2Life)
+					npc->life = kPhase2Life;
+			}
 
 			if (beat < 40)
 			{
