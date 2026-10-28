@@ -1,25 +1,46 @@
-# fl1nt.dev's hidden fight
+# fl1nt.dev's hidden level, /dev/null
 
-[fl1nt.dev](https://fl1nt.dev) embeds this build at `/cave`. If a visitor reaches that page by walking into Quote's cave from the site's platformer, the page doesn't start Cave Story: it boots straight into a one-screen arena where the visitor's own sprite fights an enderman. This is an addition to the engine, off by default; the standalone site and normal play are unchanged.
+[fl1nt.dev](https://fl1nt.dev) embeds this build at `/cave`. If a visitor gets there by walking into Quote's cave from the site's platformer, the page doesn't start Cave Story: it boots straight into /dev/null, a short level that ends in a fight with an enderman. Everything here is an addition to the engine and off by default; normal play and the standalone site are unchanged.
 
 ## Engine side (this repository)
 
-- `web_fight(1)`, called before `main()`, skips the opening and title. New games, resets and the death screen's retry (`<INI`) all go to stage 95 instead of the start point. Fight mode first loads the silent track, as the skipped opening would have: with no song loaded, regaining focus restarts music with a zero tempo and the mixer never finishes a buffer.
-- Stage 95 (`"Flint"`) is appended to the stage table: tileset `PrtFlint`, map `Flint`, background `bkFlint` (fixed), NPC sheets `Guest` and `Flint`, boss 10.
-- Boss 10 (`BossFlint.cpp`) is the enderman: it stalks the player to arm's length, teleports beside (or, if stared at for too long, behind) the player and lunges, and throws its pumpkin (`gBoss[1]`, which can be shot down and breaks on walls and platforms). Below half life it screams and speeds up. Its death event is `#1000`, which should `<BOA0100` (death animation).
-- `web_flag(n)` exposes script flags, so the page can see when the fight is won.
-- QA builds (`--test-hooks`) add `web_test_boss()` and `web_test_boss_life(life)`.
+- `web_fight(1)`, called before `main()`, skips the opening and title. New games, resets and the death screen's retry (`<INI`) all go to stage 95. You arrive at the level's event-90 marker. Fight mode first loads the silent track, as the skipped opening would have: with no song loaded, regaining focus restarts music with a zero tempo and the mixer never finishes a buffer.
+- Stage 95 (`"/dev/null"`) is appended to the stage table: tileset `PrtFlint`, map `Flint`, background `bkFlint` with background type 8, NPC sheets `Void` and `Flint`, boss 10.
+- Background type 8 (`Back.cpp`) draws two layers from one 320x240 image: the top half is a sky that tiles and drifts at a quarter of the camera's speed; the bottom half is a band of distant islands (black is see-through) at half speed, riding higher as the camera goes down.
+- NPC codes 361-368 (`NpcFlint.cpp`) are the level's creatures and effects. Their table rows are built in and appended when `npc.tbl` has the original 361 entries, so the data files are unchanged:
+
+| Code | | Sheet |
+| --- | --- | --- |
+| 361 | Endermite: hops at you, like First Cave's critters | `Void`, y 0 |
+| 362 | Stray cursor: drifts like First Cave's bats, then dives at you; three colours | `Void`, y 32 |
+| 363 | Mote emitter (invisible): lets motes drift up near the player | |
+| 364 | Mote: a speck of purple light (direction picks the colour; +4 keeps its speed) | `Void`, y 128 |
+| 365 | Ender Pearl: dropped by the enderman, runs its event when touched | `Void`, y 136 |
+| 366 | End gateway: runs its event when touched | `Void`, y 168 |
+| 367 | End rod: a flickering light | `Void`, y 152 |
+| 368 | Block shard | `Flint`, y 192 |
+
+- Boss 10 (`BossFlint.cpp`) is the enderman. It reads its room from the map: event 300's marker is the room's centre, 0x41 tiles are its ceiling, walls, floor and pillars, and the low 0x05 platforms are what it pulls blocks out of (they come back after a while). Event 330 is where it waits, 320 its perch, 310-313 where its crystals grow.
+  - The script plays the introduction with `<BOA0010` (turn), `<BOA0020` (glare), `<BOA0030` (scream) and `<BOA0100` (fight).
+  - First phase: it stalks you and swipes, teleports beside you, and throws blocks it takes from the platforms. Staring at it for too long makes it scream and appear behind you.
+  - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Destroying them (they explode) knocks it down, stunned.
+  - At a third it runs event 1020 and enrages: faster, multiple throws, shadows that dash across the room.
+  - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which runs event 1100.
+- `web_flag(n)` exposes script flags, so the page can see when the level is won and left.
+- QA builds (`--test-hooks`) add `web_test_boss()`, `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)` and `web_test_life(life)`.
 
 ## Page side (FlintSH/web)
 
-The website writes these into `/data` before calling `main()`. None of the original data files change; `.pbm` files must end in `(C)Pixel` like the originals.
+The website writes these into `/data` before calling `main()`. None of the original data files change. `.pbm` files must end in `(C)Pixel` like the originals, and pure black is see-through.
 
 | File | Contents |
 | --- | --- |
-| `MyChar.pbm` | The player sheet (replaces Quote for this session only) |
-| `Stage/PrtFlint.pbm`, `Stage/Flint.pxa` | Tileset and attributes (`0x41` walls, `0x05` platforms) |
-| `Stage/Flint.pxm`, `Stage/Flint.pxe`, `Stage/Flint.tsc` | A 20x15 map with the floor at y = 192, no entities, and the script (`#0100` on arrival, `#1000` on the boss's death) |
-| `bkFlint.pbm` | Background |
-| `Npc/NpcFlint.pbm` | The enderman: 32x48 frames (stand, walk 1, walk 2, stare, carry, throw, fade) facing left on row 1 and right on row 2, and the pumpkin's 16x16 spin frames at y = 96 |
+| `MyChar.pbm` | The player sheet (replaces Quote for this visit only) |
+| `Stage/PrtFlint.pbm`, `Stage/Flint.pxa` | 256x256 tileset and its attributes |
+| `Stage/Flint.pxm`, `Stage/Flint.pxe`, `Stage/Flint.tsc` | The map, its entities (including the markers above) and its script |
+| `bkFlint.pbm` | 320x240 background for type 8 |
+| `Npc/NpcVoid.pbm` | 320x240: the creatures and effects (codes 361-367) |
+| `Npc/NpcFlint.pbm` | 320x240: the enderman's twenty 32x48 poses, ten to a row, facing left then right (y 0-191); its block (16x16, four turns), shards (8x8) and crystal (16x24, four frames, x 128) at y 192 |
+| `Face.pbm`, `ItemImage.pbm` | Faces for the message box and the pearl's item picture (these replace the originals for this visit only) |
 
-`tests/fight.spec.js` boots fight mode against a QA build with a minimal arena made from the game's own files, and checks the fight starts and the death event runs.
+`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, and the enderman goes through its phases and drops its pearl.

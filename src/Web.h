@@ -6,4 +6,7 @@
 // See docs/FLINT_FIGHT.md.
 #define FLINT_FIGHT_STAGE 95
 
+// The level marks the player's start with a marker for this event.
+#define FLINT_START_EVENT 90
+
 extern int gWebFight;

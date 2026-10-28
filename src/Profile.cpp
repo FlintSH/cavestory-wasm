@@ -276,6 +276,18 @@ BOOL InitializeGame(HWND hWnd)
 		// the mixer never finishes a buffer.
 		ChangeMusic(0);
 		loaded = TransferStage(FLINT_FIGHT_STAGE, 100, 3, 11);
+
+		// The level marks where you arrive with an event-90 marker.
+		for (int i = 0; loaded && i < NPC_MAX; i++)
+		{
+			if ((gNPC[i].cond & 0x80) && gNPC[i].code_event == FLINT_START_EVENT)
+			{
+				gMC.x = gNPC[i].x;
+				gMC.y = gNPC[i].y;
+				SetFrameMyChar();
+				break;
+			}
+		}
 	}
 	else
 	{

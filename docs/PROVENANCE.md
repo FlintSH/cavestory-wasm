@@ -11,7 +11,7 @@ The baseline is [Clownacy's Emscripten branch, mirrored by gameblabla](https://g
 - Save restoration before engine startup; serialized IndexedDB writes; original-format save import/export; persistent speedrun records.
 - Nonblocking SDL event polling and a safe base-path fallback.
 - Browser integration tests, screenshots/recordings, original-asset verification, and GitHub Pages deployment.
-- An opt-in fight mode for [fl1nt.dev](https://fl1nt.dev)'s hidden fight: one extra stage (95) and boss (10), entered only when the embedding page calls `web_fight(1)` and supplies the arena's files. See [FLINT_FIGHT.md](FLINT_FIGHT.md).
+- An opt-in mode for [fl1nt.dev](https://fl1nt.dev)'s hidden level, /dev/null: one extra stage (95), its boss (10), eight NPC codes after the original 361 (table rows built in, `npc.tbl` unchanged) and a layered background type (8), entered only when the embedding page calls `web_fight(1)` and supplies the level's files. See [FLINT_FIGHT.md](FLINT_FIGHT.md).
 
 The upstream `FIX_BUGS` and `NONPORTABLE` options are disabled. `-fwrapv` preserves signed integer wrapping, and strict aliasing optimizations are disabled. The game runs at its nominal 50 Hz, with its original 320×240 logical viewport. Browser rendering and scheduling, SDL audio resampling, and FreeType font rasterization differ from Windows GDI/DirectSound. Timing depends on browser/host performance.
 
