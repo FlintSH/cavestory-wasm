@@ -1,13 +1,15 @@
 const {test,expect}=require('@playwright/test');
 // fl1nt.dev's hidden level (docs/FLINT_FIGHT.md). The website draws the real
 // level; here a one-room level is assembled from the game's own files.
-test('hidden level: boots into stage 95, reaches lost+found and back, the enderman goes through its phases, and its pearl ends the fight',async({page})=>{
-  test.skip(!process.env.QA_URL,'Build with --test-hooks --output build/qa and set QA_URL to its server.');
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+
+// Boots fight mode into that level. cutscene is event 1020, the script for
+// the cutscene before the enderman's last phase.
+async function boot(page,errors,cutscene){
+  page.on('pageerror',e=>errors.push(e.message));
   page.on('dialog',async dialog=>{errors.push('dialog: '+dialog.message());await dialog.dismiss();});
   await page.goto(process.env.QA_URL);
   await page.addScriptTag({url:new URL('cave-en.js',process.env.QA_URL+'/').href});
-  await page.evaluate(async()=>{
+  await page.evaluate(async(cutscene)=>{
     const canvas=document.querySelector('canvas');
     const game=await createCaveStory({canvas,noInitialRun:true,locateFile:file=>new URL(file,location.href).href});
     const fs=game.FS;
@@ -48,15 +50,45 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
     // goes to lost+found; #1000 is the death; #1100 the pearl.
     fs.writeFile('/data/Stage/Flint.tsc',encode(['#0090','<END','#0100','<KEY<AM+0002:0000<ML+0050<LI+0100<BOA0010<WAI0005<BOA0100<FRE<END',
       '#0600','<KEY<TRA0096:0100:0005:0011','#1000','<KEY<BOA0500<WAI0170<FRE<END',
-      '#1010','<END','#1020','<END','#1100','<KEY<DNP1100<FL+7777<FRE<END',''].join('\r\n')));
+      '#1010','<END','#1020',cutscene,'#1100','<KEY<DNP1100<FL+7777<FRE<END',''].join('\r\n')));
+    // Its last form's sheet: any picture no bigger than its surface will do.
+    copy('/data/Npc/NpcGuest.pbm','/data/Npc/NpcFlintRage.pbm');
     window.caveStory=game;
+    window.flint=[];
+    game.onFlint=name=>flint.push(name);
     game._web_fight(1);
     game.callMain([]);
     canvas.focus();
-  });
+  },cutscene);
   const state=()=>page.evaluate(()=>({me:JSON.parse(caveStory.UTF8ToString(caveStory._web_state())),boss:JSON.parse(caveStory.UTF8ToString(caveStory._web_test_boss())),won:caveStory._web_flag(7777)}));
   // Straight into the level, at its arrival marker, with the new NPC codes loaded.
   await expect.poll(async()=>(await state()).me.stage,{timeout:10000}).toBe(95);
+  return state;
+}
+
+// From the start of the fight to its second phase's end: it grows crystals
+// that heal it, they're destroyed and it's knocked down.
+async function toStunned(page,state){
+  await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBeGreaterThanOrEqual(110);
+  const s=await state();
+  expect([s.boss.life,s.boss.phase]).toEqual([300,1]);
+  await page.evaluate(()=>caveStory._web_test_boss_life(200));
+  await expect.poll(async()=>(await state()).boss.crystals,{timeout:15000}).toBe(2);
+  expect((await state()).boss.phase).toBe(2);
+  await expect.poll(async()=>(await state()).boss.act,{timeout:5000}).toBe(210);
+  await page.evaluate(()=>caveStory._web_test_boss_life(150));
+  await expect.poll(async()=>(await state()).boss.life,{timeout:5000}).toBeGreaterThan(150);
+  await page.evaluate(()=>{caveStory._web_test_boss_part(5,0);caveStory._web_test_boss_part(6,0);});
+  await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBe(220);
+}
+
+const CUTSCENE=['rage','look','transform','transformed','break','crack','crack','out'];
+
+test('hidden level: boots into stage 95, reaches lost+found and back, the enderman goes through its phases, and its pearl ends the fight',async({page})=>{
+  test.skip(!process.env.QA_URL,'Build with --test-hooks --output build/qa and set QA_URL to its server.');
+  const errors=[];
+  // The cutscene as the website scripts it, without the talking.
+  const state=await boot(page,errors,'<KEY<WAI0010<BOA0320<WAI0020<BOA0330<WAI0200<BOA0340<WAI0250<FRE<END');
   let s=await state();
   expect(s.me.x>>13).toBe(4);
   expect(await page.evaluate(()=>caveStory._web_test_count(361))).toBe(1);
@@ -66,26 +98,20 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   expect((await state()).me.x>>13).toBe(5);
   await page.evaluate(()=>caveStory._web_test_event(101));
   await expect.poll(async()=>(await state()).me.stage,{timeout:5000}).toBe(95);
-  await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBeGreaterThanOrEqual(110);
-  s=await state();
-  expect([s.boss.life,s.boss.phase]).toEqual([300,1]);
-  // Second phase: crystals that heal it until they're gone.
-  await page.evaluate(()=>caveStory._web_test_boss_life(200));
-  await expect.poll(async()=>(await state()).boss.crystals,{timeout:15000}).toBe(2);
-  s=await state();
-  expect(s.boss.phase).toBe(2);
-  await expect.poll(async()=>(await state()).boss.act,{timeout:5000}).toBe(210);
-  await page.evaluate(()=>caveStory._web_test_boss_life(150));
-  await expect.poll(async()=>(await state()).boss.life,{timeout:5000}).toBeGreaterThan(150);
-  await page.evaluate(()=>{caveStory._web_test_boss_part(5,0);caveStory._web_test_boss_part(6,0);});
-  await expect.poll(async()=>(await state()).boss.act,{timeout:10000}).toBe(220);
-  // Rage. From here the website draws the fight outside the game too, from
-  // the events the engine sends it (Module.onFlint): it screams until the
-  // screen cracks, and climbs out of the room.
-  await page.evaluate(()=>{window.flint=[];caveStory.onFlint=name=>flint.push(name);});
+  await toStunned(page,state);
+  // The last phase opens with a cutscene you can't move in: it looks out of
+  // the screen, transforms back to full life, screams until the screen
+  // cracks and climbs out. The website draws the parts outside the game from
+  // the events the engine sends it (Module.onFlint).
+  await page.evaluate(()=>{flint.length=0;});
   await page.evaluate(()=>caveStory._web_test_boss_life(100));
   await expect.poll(async()=>(await state()).boss.phase,{timeout:15000}).toBe(3);
-  await expect.poll(()=>page.evaluate(()=>flint.slice(0,4).join(' ')),{timeout:15000}).toBe('break crack crack out');
+  await expect.poll(()=>page.evaluate(()=>flint[0]),{timeout:5000}).toBe('rage');
+  expect((await state()).me.flags&2).toBe(0);
+  await expect.poll(()=>page.evaluate(()=>flint.slice(0,8).join(' ')),{timeout:30000}).toBe(CUTSCENE.join(' '));
+  s=await state();
+  expect([s.boss.life,s.boss.rage]).toEqual([300,1]);
+  await expect.poll(async()=>(await state()).me.flags&2,{timeout:10000}).toBe(2);
   // Out there it throws pieces of the page in, reaches in or tips the room.
   // Staring at it (the page's cursor resting on it) makes it reach for you;
   // shooting its hand once it's slammed down hurts it.
@@ -144,7 +170,22 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
     if(s.me.flags&4)await hold('KeyZ',80);
     return s.me.stage===95&&(s.me.x>>13)===4&&(s.me.flags&2)&&s.me.life>0?1:0;
   },{timeout:40000,intervals:[400]}).toBe(1);
-  // The retry tells the page to put itself back together.
+  // The retry tells the page to put itself back together, and the enderman
+  // is back in its first form.
   expect(await page.evaluate(()=>flint.includes('reset'))).toBe(true);
+  expect((await state()).boss.rage).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test('hidden level: without a script for it, the last phase\'s cutscene plays through by itself',async({page})=>{
+  test.skip(!process.env.QA_URL,'Build with --test-hooks --output build/qa and set QA_URL to its server.');
+  const errors=[];
+  const state=await boot(page,errors,'<END');
+  await toStunned(page,state);
+  await page.evaluate(()=>{flint.length=0;});
+  await page.evaluate(()=>caveStory._web_test_boss_life(100));
+  await expect.poll(()=>page.evaluate(()=>flint.slice(0,8).join(' ')),{timeout:30000}).toBe(CUTSCENE.join(' '));
+  const s=await state();
+  expect([s.boss.life,s.boss.rage,s.boss.phase]).toEqual([300,1,3]);
   expect(errors).toEqual([]);
 });

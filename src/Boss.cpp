@@ -62,12 +62,14 @@ void PutBossChar(int fx, int fy)
 			else
 				side = gBoss[b].view.back;
 
+			// The original bosses all draw from the stage's second sprite
+			// sheet; fl1nt.dev's enderman sets surf for its last form.
 			PutBitmap3(
 				&grcGame,
 				(gBoss[b].x - side) / 0x200 - fx / 0x200 + a,
 				(gBoss[b].y - gBoss[b].view.top) / 0x200 - fy / 0x200,
 				&gBoss[b].rect,
-				SURFACE_ID_LEVEL_SPRITESET_2);
+				gBoss[b].surf ? gBoss[b].surf : SURFACE_ID_LEVEL_SPRITESET_2);
 		}
 	}
 }

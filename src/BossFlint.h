@@ -12,4 +12,5 @@ void FlintBossStare(void);
 
 // For QA builds: the current phase (1-3), and a way to skip to one.
 int FlintBossPhase(void);
+int FlintBossRage(void); // in its last form
 void FlintBossSetPhase(int phase);
