@@ -29,7 +29,7 @@
 
 int gStageNo;
 
-const STAGE_TABLE gTMT[96] = {
+const STAGE_TABLE gTMT[97] = {
 	STAGE_ENTRY("0", "0", 4, "bk0", "Guest", "0", 0, "Null", "無"),
 	STAGE_ENTRY("Pens", "Pens1", 1, "bkBlue", "Guest", "0", 0, "Arthur's House", "アーサーの家"),
 	STAGE_ENTRY("Eggs", "Eggs", 1, "bkGreen", "Eggs1", "Ravil", 0, "Egg Corridor", "タマゴ回廊"),
@@ -127,6 +127,8 @@ const STAGE_TABLE gTMT[96] = {
 	STAGE_ENTRY("Oside", "Clock", 6, "bkMoon", "Moon", "0", 0, "Clock Room", "時計屋"),
 	// fl1nt.dev's hidden fight (cavestory-wasm addition; see docs/FLINT_FIGHT.md).
 	STAGE_ENTRY("Flint", "Flint", 8, "bkFlint", "Void", "Flint", 10, "/dev/null", "/dev/null"),
+	// A secret room off /dev/null, through a hidden End gateway.
+	STAGE_ENTRY("Found", "Found", 8, "bkFlint", "Void", "Flint", 0, "lost+found", "lost+found"),
 };
 
 BOOL TransferStage(int no, int w, int x, int y)

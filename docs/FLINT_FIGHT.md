@@ -4,8 +4,9 @@
 
 ## Engine side (this repository)
 
-- `web_fight(1)`, called before `main()`, skips the opening and title. New games, resets and the death screen's retry (`<INI`) all go to stage 95. You arrive at the level's event-90 marker. Fight mode first loads the silent track, as the skipped opening would have: with no song loaded, regaining focus restarts music with a zero tempo and the mixer never finishes a buffer.
+- `web_fight(1)`, called before `main()`, skips the opening and title. New games, resets and the death screen's retry (`<INI`) all go to stage 95. You arrive at the level's event-90 marker. The level is open to the sky (a maxed Machine Gun can fly you over its walls), so falling out of the bottom of the map is a death in fight mode, with Head.tsc's event 42 ("You were never seen again..."). Fight mode first loads the silent track, as the skipped opening would have: with no song loaded, regaining focus restarts music with a zero tempo and the mixer never finishes a buffer.
 - Stage 95 (`"/dev/null"`) is appended to the stage table: tileset `PrtFlint`, map `Flint`, background `bkFlint` with background type 8, NPC sheets `Void` and `Flint`, boss 10.
+- Stage 96 (`"lost+found"`), a secret room the level reaches through a hidden End gateway, follows it: tileset `PrtFound`, map `Found`, the same background and NPC sheets, no boss.
 - Background type 8 (`Back.cpp`) draws two layers from one 320x240 image: the top half is a sky that tiles and drifts at a quarter of the camera's speed; the bottom half is a band of distant islands (black is see-through) at half speed, riding higher as the camera goes down.
 - NPC codes 361-368 (`NpcFlint.cpp`) are the level's creatures and effects. Their table rows are built in and appended when `npc.tbl` has the original 361 entries, so the data files are unchanged:
 
@@ -16,7 +17,7 @@
 | 363 | Mote emitter (invisible): lets motes drift up near the player | |
 | 364 | Mote: a speck of purple light (direction picks the colour; +4 keeps its speed) | `Void`, y 128 |
 | 365 | Ender Pearl: dropped by the enderman, runs its event when touched | `Void`, y 136 |
-| 366 | End gateway: runs its event when touched | `Void`, y 168 |
+| 366 | End gateway: runs its event when touched. Opened by a script (`<CNP`) it appears with a burst and a sound; placed in a map with the alternate direction, it's simply there | `Void`, y 168 |
 | 367 | End rod: a flickering light | `Void`, y 152 |
 | 368 | Block shard | `Flint`, y 192 |
 
@@ -25,9 +26,9 @@
   - First phase: it stalks you and swipes, teleports beside you, and throws blocks it takes from the platforms. Staring at it for too long makes it scream and appear behind you.
   - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Destroying them (they explode) knocks it down, stunned.
   - At a third it runs event 1020 and enrages: faster, multiple throws, shadows that dash across the room.
-  - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which runs event 1100.
+  - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which falls through the platforms to the floor and runs event 1100 when touched.
 - `web_flag(n)` exposes script flags, so the page can see when the level is won and left.
-- QA builds (`--test-hooks`) add `web_test_boss()`, `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)` and `web_test_life(life)`.
+- QA builds (`--test-hooks`) add `web_test_boss()`, `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)` and `web_test_boss_move(x, y)`.
 
 ## Page side (FlintSH/web)
 
@@ -38,9 +39,10 @@ The website writes these into `/data` before calling `main()`. None of the origi
 | `MyChar.pbm` | The player sheet (replaces Quote for this visit only) |
 | `Stage/PrtFlint.pbm`, `Stage/Flint.pxa` | 256x256 tileset and its attributes |
 | `Stage/Flint.pxm`, `Stage/Flint.pxe`, `Stage/Flint.tsc` | The map, its entities (including the markers above) and its script |
+| `Stage/PrtFound.pbm`, `Stage/Found.pxa`, `Stage/Found.pxm`, `Stage/Found.pxe`, `Stage/Found.tsc` | The same for lost+found |
 | `bkFlint.pbm` | 320x240 background for type 8 |
 | `Npc/NpcVoid.pbm` | 320x240: the creatures and effects (codes 361-367) |
 | `Npc/NpcFlint.pbm` | 320x240: the enderman's twenty 32x48 poses, ten to a row, facing left then right (y 0-191); its block (16x16, four turns), shards (8x8) and crystal (16x24, four frames, x 128) at y 192 |
-| `Face.pbm`, `ItemImage.pbm` | Faces for the message box and the pearl's item picture (these replace the originals for this visit only) |
+| `Face.pbm`, `ItemImage.pbm`, `ArmsItem.tsc` | Faces for the message box, item pictures, and the inventory's descriptions (these replace the originals for this visit only) |
 
-`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, and the enderman goes through its phases and drops its pearl.
+`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, a script event takes you to stage 96 and back, the enderman goes through its phases, its pearl falls from its perch to the floor, and falling out of the map is a death you can retry from.

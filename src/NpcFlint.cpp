@@ -341,6 +341,12 @@ void ActNpc365(NPCHAR *npc)
 	switch (npc->act_no)
 	{
 		case 0: // Falling (it pops up when dropped)
+			// Given a floor (tgt_y), it passes through anything above it.
+			if (npc->tgt_y != 0 && npc->y < npc->tgt_y - PX(12))
+				npc->bits |= npc_ignoreSolid;
+			else
+				npc->bits &= ~npc_ignoreSolid;
+
 			npc->ym += 0x20;
 			if (npc->ym > 0x400)
 				npc->ym = 0x400;
@@ -390,8 +396,13 @@ void ActNpc366(NPCHAR *npc)
 	{
 		npc->act_no = 1;
 		npc->y -= PX(16);
-		SetMoteBurst(npc->x, npc->y, 16, 0x500, MOTE_WHITE);
-		PlaySoundObject(29, 1);
+		// Opened by a script (<CNP), it appears with a burst. Placed in the
+		// map with the alternate direction, it has always been there.
+		if (npc->direct != 2)
+		{
+			SetMoteBurst(npc->x, npc->y, 16, 0x500, MOTE_WHITE);
+			PlaySoundObject(29, 1);
+		}
 	}
 
 	if (++npc->ani_wait > 3)

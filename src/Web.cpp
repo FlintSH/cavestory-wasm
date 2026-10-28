@@ -52,6 +52,7 @@ EMSCRIPTEN_KEEPALIVE void web_key(int key, int down) {
 #include "BossFlint.h"
 #include "NpChar.h"
 #include "MycHit.h"
+#include "MycParam.h"
 extern CREDIT Credit;
 extern "C" {
 EMSCRIPTEN_KEEPALIVE int web_test_stage(int stage) {
@@ -83,12 +84,19 @@ EMSCRIPTEN_KEEPALIVE const char *web_test_boss() {
 }
 EMSCRIPTEN_KEEPALIVE void web_test_boss_life(int life) { gBoss[0].life = life; }
 EMSCRIPTEN_KEEPALIVE void web_test_boss_phase(int phase) { FlintBossSetPhase(phase); }
+// Move the enderman to a tile (while it's dying, say, so its pearl drops from there).
+EMSCRIPTEN_KEEPALIVE void web_test_boss_move(int x, int y) {
+    gBoss[0].x = x * 16 * 0x200; gBoss[0].y = y * 16 * 0x200; gBoss[0].xm = gBoss[0].ym = 0;
+}
 // Put the player on a tile (for walking QA through the level).
 EMSCRIPTEN_KEEPALIVE void web_test_warp(int x, int y) {
     gMC.x = x * 16 * 0x200; gMC.y = y * 16 * 0x200; gMC.xm = gMC.ym = 0;
 }
 // Set the player's life and maximum.
 EMSCRIPTEN_KEEPALIVE void web_test_life(int life) { gMC.life = gMC.max_life = life; }
+// Give the current weapon energy, as if picked up (levels it, and at its
+// maximum adds a Whimsical Star).
+EMSCRIPTEN_KEEPALIVE void web_test_exp(int exp) { AddExpMyChar(exp); }
 // Run a script event, e.g. a chest's.
 EMSCRIPTEN_KEEPALIVE int web_test_event(int no) { return StartTextScript(no); }
 // Set a boss part's condition (0 destroys it, as if shot down).

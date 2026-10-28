@@ -765,6 +765,8 @@ static void Die(NPCHAR *npc)
 	SetQuake(150);
 }
 
+// The pearl falls through the platforms to the floor (its tgt_y), so it never
+// ends up somewhere the player can't reach.
 static void DropPearl(NPCHAR *npc)
 {
 	SetNpChar(NPC_ENDER_PEARL, npc->x, npc->y - PX(8), 0, -0x500, 0, NULL, 0x20);
@@ -773,6 +775,7 @@ static void DropPearl(NPCHAR *npc)
 		if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == NPC_ENDER_PEARL && gNPC[i].code_event == 0)
 		{
 			gNPC[i].code_event = EVENT_PEARL;
+			gNPC[i].tgt_y = arena.floor;
 			break;
 		}
 	}
@@ -787,9 +790,40 @@ static int Endermites(void)
 	return count;
 }
 
+static void Setup(NPCHAR *npc)
+{
+	ReadArena(npc);
+	npc->cond = 0x80;
+	npc->x = arena.startX;
+	npc->y = arena.startY;
+	npc->direct = 2;
+	npc->life = kLife;
+	npc->size = 3;
+	npc->hit_voice = 52;
+	npc->destroy_voice = 72;
+	npc->code_event = EVENT_DEATH;
+	npc->bits = npc_eventDie | npc_showDamage;
+	npc->hit.front = npc->hit.back = PX(6);
+	npc->hit.top = PX(20);
+	npc->hit.bottom = PX(24);
+	npc->view.front = npc->view.back = PX(16);
+	npc->view.top = npc->view.bottom = PX(24);
+	npc->act_no = ACT_WAIT;
+}
+
 void ActBossChar_Enderman(void)
 {
 	NPCHAR *npc = &gBoss[0];
+
+	// A script can <BOA in the same frame the stage loads, before this has
+	// ever run: set up first, then take the act it asked for.
+	if (npc->size == 0)
+	{
+		int act = npc->act_no;
+		Setup(npc);
+		if (act != ACT_SETUP)
+			npc->act_no = act;
+	}
 
 	// Keep each phase from being skipped by a burst of damage.
 	if (npc->act_no >= ACT_FIGHT && npc->act_no < ACT_DIE)
@@ -803,23 +837,7 @@ void ActBossChar_Enderman(void)
 	switch (npc->act_no)
 	{
 		case ACT_SETUP:
-			ReadArena(npc);
-			npc->cond = 0x80;
-			npc->x = arena.startX;
-			npc->y = arena.startY;
-			npc->direct = 2;
-			npc->life = kLife;
-			npc->size = 3;
-			npc->hit_voice = 52;
-			npc->destroy_voice = 72;
-			npc->code_event = EVENT_DEATH;
-			npc->bits = npc_eventDie | npc_showDamage;
-			npc->hit.front = npc->hit.back = PX(6);
-			npc->hit.top = PX(20);
-			npc->hit.bottom = PX(24);
-			npc->view.front = npc->view.back = PX(16);
-			npc->view.top = npc->view.bottom = PX(24);
-			npc->act_no = ACT_WAIT;
+			Setup(npc);
 			// Fallthrough
 		case ACT_WAIT:
 			// Back turned, gazing into the void.
