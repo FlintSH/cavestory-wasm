@@ -95,8 +95,8 @@ EMSCRIPTEN_KEEPALIVE const char *web_test_boss() {
     for (int i = 5; i < 9; i++) if (gBoss[i].cond & 0x80) ++crystals;
     for (int i = 1; i < 4; i++) if (gBoss[i].cond & 0x80) ++blocks;
     const NPCHAR *hand = &gBoss[11]; // the hand it reaches in with in the last phase
-    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"phase\":%d,\"crystals\":%d,\"blocks\":%d,\"bits\":%d,\"hand\":{\"cond\":%d,\"x\":%d,\"y\":%d,\"damage\":%d}}",
-        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, FlintBossPhase(), crystals, blocks, gBoss[0].bits,
+    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"phase\":%d,\"rage\":%d,\"crystals\":%d,\"blocks\":%d,\"bits\":%d,\"hand\":{\"cond\":%d,\"x\":%d,\"y\":%d,\"damage\":%d}}",
+        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, FlintBossPhase(), FlintBossRage(), crystals, blocks, gBoss[0].bits,
         hand->cond, hand->x, hand->y, hand->damage);
     return state;
 }

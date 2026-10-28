@@ -206,6 +206,7 @@ BOOL LoadGenericData()
 		MakeSurface_Generic(40, 240, SURFACE_ID_VALUE_VIEW, FALSE);
 		MakeSurface_Generic(320, 240, SURFACE_ID_LEVEL_SPRITESET_1, FALSE);
 		MakeSurface_Generic(320, 240, SURFACE_ID_LEVEL_SPRITESET_2, FALSE);
+		MakeSurface_Generic(480, 288, SURFACE_ID_FLINT_RAGE, FALSE);
 		MakeSurface_Generic(WINDOW_WIDTH, 16 * MAX_STRIP, SURFACE_ID_CREDIT_CAST, FALSE);
 
 		pt_size = 0;

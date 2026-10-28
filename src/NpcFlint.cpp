@@ -40,7 +40,7 @@ const NPC_TABLE gFlintNpcTable[NPC_FLINT_COUNT] = {
 	{npc_eventTouch | npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_1, 0, 0, 0, 0, 0, {8, 16, 8, 24}, {16, 24, 16, 24}}, // end gateway
 	{npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_1, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {8, 8, 8, 8}}, // end rod
 	{npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_2, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {4, 4, 4, 4}}, // block shard
-	{npc_shootable, 3, SURFACE_ID_LEVEL_SPRITESET_1, 31, 12, 1, 1, 2, {6, 4, 6, 6}, {8, 8, 8, 8}}, // page piece
+	{npc_shootable, 3, SURFACE_ID_LEVEL_SPRITESET_1, 31, 12, 1, 1, 3, {6, 4, 6, 6}, {8, 8, 8, 8}}, // page piece
 };
 
 static void SetRect(NPCHAR *npc, int left, int top, int width, int height)

@@ -26,7 +26,9 @@
   - The script plays the introduction with `<BOA0010` (turn), `<BOA0020` (glare), `<BOA0030` (scream) and `<BOA0100` (fight).
   - First phase: it stalks you and swipes, teleports beside you, and throws blocks it takes from the platforms. Staring at it for too long makes it scream and appear behind you.
   - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Each crystal beams at it and heals it a point about every half second, up to its full life. Destroying them (they explode) knocks it down, stunned.
-  - At a third it runs event 1020 and screams until the screen cracks, then climbs out of the room through the top. The website takes it from there (below): the game shrinks into a window on fl1nt.dev, and the enderman is out on the site. From outside it throws pieces of the page in (code 369), reaches in with its hand (boss part 11: it hangs over you, slams down, sits, then drags across the floor; hits on the hand hurt the enderman), or tips the room so you slide. After a few attacks it drops back in, enraged (faster, multiple throws, shadows that dash across the room), and leaves again after about eight seconds or 20 damage. At 75, 50 and 25 life it tears more of the site apart, stays out longer and attacks faster, and bits of the room's ceiling fall.
+  - At a third it starts the last phase's cutscene, event 1020. It clears the room (blocks, crystals, endermites), can't be hurt, and gets up off the floor; the script moves it on with `<BOA0320` (it looks out of the screen, at the person playing), `<BOA0330` (it transforms: it rises, flickers into its last form and its life fills back up to 300) and `<BOA0340` (it screams until the screen cracks and climbs out of the room through the top). Each of these acts sets itself up and runs as the next number. Without a script running, each moves on to the next by itself after two seconds, so a level without event 1020 can't get stuck. Nothing new starts outside until the script gives control back.
+  - Its last form is half as big again: 48x72 frames in the same order as its first sheet's, from `Npc/NpcFlintRage.pbm`, which goes on a surface of its own (`SURFACE_ID_FLINT_RAGE`, 480x288; `PutBossChar` draws a boss part from `surf` when it's set). Its feet stay where they were; its hit box and the reach of its swipe grow with it.
+  - The website takes the rest from there (below): the game is pulled into a window on fl1nt.dev, and the enderman is out on the site. From outside it throws pieces of the page in, two or three at a time (code 369), reaches in with its hand (boss part 11: it hangs over you, slams down, sits, then drags across the floor; hits on the hand hurt the enderman, and after 24 damage it snatches the hand back), or tips the room so you slide. Later on the hand and the tipping come with pieces too. After four or five attacks it drops back in, enraged (faster, multiple throws, shadows that dash across the room), and leaves again after eight seconds or 45 damage. At 225, 150 and 75 life it tears more of the site apart, attacks sooner, slams and tips harder, and bits of the room's ceiling fall, some of them pieces of the page.
   - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which falls through the platforms to the floor and runs event 1100 when touched.
 - `web_flag(n)` exposes script flags, so the page can see when the level is won and left.
 - In fight mode the boss tells the page what it's doing by calling `Module.onFlint(name, a, b)`, if the page set one. Positions are in screen pixels (320x240):
@@ -34,6 +36,9 @@
 | Event | a, b | |
 | --- | --- | --- |
 | `reset` | | The fight is set up: a new game, or the retry after a death |
+| `rage` | x, y | The last phase's cutscene starts |
+| `look` | x, y | It looks out of the screen |
+| `transform`, `transformed` | x, y | Its transformation starts, and it's in its last form |
 | `break` | x, y | The scream that cracks the screen, where it is |
 | `crack` | x, y | Twice more while it screams |
 | `out` | x | It has left the room |
@@ -42,12 +47,12 @@
 | `tilt`, `untilt` | direction | It tips the room (1 right, -1 left), and lets go |
 | `in` | x | It drops back into the room |
 | `hurt` | life, outside | It took damage |
-| `crumble` | 1-3 | At 75, 50 and 25 life |
+| `crumble` | 1-3 | At 225, 150 and 75 life |
 | `stared` | | It noticed you (below) |
 | `die` | x, y | Its death, in the last phase |
 
-- `web_fight_stare()`: the page calls this when the visitor's cursor rests on the enderman while it's outside. If it isn't busy, it reaches in for you.
-- QA builds (`--test-hooks`) add `web_test_boss()` (including its hand), `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)` and `web_test_boss_move(x, y)`.
+- `web_fight_stare()`: the page calls this when the visitor's cursor rests on the enderman while it's outside. If it isn't busy, and the cutscene is over, it reaches in for you.
+- QA builds (`--test-hooks`) add `web_test_boss()` (including its hand and whether it's in its last form), `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)` and `web_test_boss_move(x, y)`.
 
 ## Page side (FlintSH/web)
 
@@ -62,6 +67,7 @@ The website writes these into `/data` before calling `main()`. None of the origi
 | `bkFlint.pbm` | 320x240 background for type 8 |
 | `Npc/NpcVoid.pbm` | 320x240: the creatures and effects (codes 361-367); the enderman's hand (32x32, open at x 80, flat at x 112) and arm (16x16, x 144) at y 0; the six page pieces at y 32 (x 80-263) and their scraps (8x8, x 80) at y 64 |
 | `Npc/NpcFlint.pbm` | 320x240: the enderman's twenty 32x48 poses, ten to a row, facing left then right (y 0-191); its block (16x16, four turns), shards (8x8) and crystal (16x24, four frames, x 128) at y 192 |
+| `Npc/NpcFlintRage.pbm` | 480x288: the enderman's last form, its twenty poses as 48x72 frames, ten to a row, facing left then right. No bigger: it's copied into a surface of exactly that size |
 | `Face.pbm`, `ItemImage.pbm`, `ArmsItem.tsc` | Faces for the message box, item pictures, and the inventory's descriptions (these replace the originals for this visit only) |
 
-`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, a script event takes you to stage 96 and back, the enderman goes through its phases (its crystals heal it; in the last it leaves the room with the page's events, reaches in when stared at, is hurt through its hand and drops back in), its pearl falls from its perch to the floor, and falling out of the map is a death you can retry from, which resets the page.
+`tests/fight.spec.js` boots fight mode against a QA build with a one-room level made from the game's own files, and checks that you arrive at the marker, the new NPC codes load, a script event takes you to stage 96 and back, the enderman goes through its phases (its crystals heal it; the last phase's cutscene locks you in place, sends the page its events, and transforms it back to full life; then it leaves the room, reaches in when stared at, is hurt through its hand and drops back in), its pearl falls from its perch to the floor, and falling out of the map is a death you can retry from, which resets the page and its form. A second test runs the cutscene with no script for it, to show it plays through by itself.

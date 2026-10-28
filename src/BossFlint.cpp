@@ -13,8 +13,11 @@
 //
 // The script drives the introduction with <BOA0010 (turn), <BOA0020 (glare),
 // <BOA0030 (scream) and <BOA0100 (fight). It runs event 1010 when the
-// crystals grow, 1020 when it enrages, and 1000 when it dies; event 1000
-// should <BOA0500 for the death. The pearl it drops runs event 1100.
+// crystals grow, 1020 for the last phase's cutscene, and 1000 when it dies;
+// event 1000 should <BOA0500 for the death. The pearl it drops runs event
+// 1100. Event 1020 steps the cutscene on with <BOA0320 (it looks out of the
+// screen), <BOA0330 (it transforms) and <BOA0340 (it breaks out); without a
+// script it goes on by itself.
 #include "BossFlint.h"
 
 #include <math.h>
@@ -39,11 +42,16 @@
 #include "ValueView.h"
 #include "Web.h"
 
+extern TEXT_SCRIPT gTS; // TextScr.cpp: its mode is 0 when no script is running
+
 #define PX(n) ((n) * 0x200)
 
 static const int kLife = 300;
 static const int kPhase2Life = 200; // crystals
 static const int kPhase3Life = 100; // rage
+// The last phase starts back at full life; it tears the site apart further at
+// each of these (crumble 1-3).
+static const int kCrumbleLife[3] = {225, 150, 75};
 
 enum
 {
@@ -123,11 +131,17 @@ enum
 	ACT_GUARD = 210,
 	ACT_FALL = 219,
 	ACT_STUNNED = 220,
-	ACT_RAGE = 300, // the last phase: it breaks the screen
+	ACT_RAGE = 300, // the last phase's cutscene: it gets up
 	ACT_LEAVE = 301, // out through the top of the screen
 	ACT_OUTSIDE = 302, // on fl1nt.dev, throwing pieces of it in
 	ACT_DROP = 303, // back down into the room
 	ACT_SHADOWS = 310,
+	// The cutscene's acts, which <BOA starts: each sets itself up, then runs
+	// as the next number.
+	ACT_LOOK = 320, // it looks out of the screen at you
+	ACT_TRANSFORM = 330, // into its last form, its life coming back
+	ACT_TRANSFORMED = 335,
+	ACT_BREAK = 340, // it screams until the screen breaks, and climbs out
 	ACT_DIE = 500,
 	ACT_DYING = 501
 };
@@ -180,8 +194,11 @@ static struct
 	int lastLife;
 	int reach, reachWait; // its hand: see ActHand
 	int tilt, tiltWait; // the screen tipped one way (-1, 1)
-	int debris;
+	int debris, debrisCount;
 	struct { int wait, x, kind; } incoming[4]; // pieces of the site on their way in
+	BOOL rage; // in its last form, drawn from SURFACE_ID_FLINT_RAGE
+	int idle; // cutscene frames without a script to move it on
+	int handLife; // its life when its hand came in
 } arena;
 
 static BOOL Solid(unsigned char attribute)
@@ -194,6 +211,8 @@ static int TileOf(int v)
 	return (v / 0x200 + 8) / 16;
 }
 
+// Its last form is half as big again, on a sheet of its own (Npc/NpcFlintRage,
+// 48x72 frames in the same order). Its feet stay where they were.
 static void SetFrame(NPCHAR *npc, int frame)
 {
 	if (frame == FRAME_HIDDEN)
@@ -202,10 +221,26 @@ static void SetFrame(NPCHAR *npc, int frame)
 		return;
 	}
 
+	if (arena.rage)
+	{
+		npc->surf = SURFACE_ID_FLINT_RAGE;
+		npc->rect.left = (frame % 10) * 48;
+		npc->rect.top = (frame / 10) * 144 + (npc->direct == 0 ? 0 : 72);
+		npc->rect.right = npc->rect.left + 48;
+		npc->rect.bottom = npc->rect.top + 72;
+		npc->view.front = npc->view.back = PX(24);
+		npc->view.top = PX(48);
+		npc->view.bottom = PX(24);
+		return;
+	}
+
+	npc->surf = (Surface_Ids)0; // the stage's sheet
 	npc->rect.left = (frame % 10) * 32;
 	npc->rect.top = (frame / 10) * 96 + (npc->direct == 0 ? 0 : 48);
 	npc->rect.right = npc->rect.left + 32;
 	npc->rect.bottom = npc->rect.top + 48;
+	npc->view.front = npc->view.back = PX(16);
+	npc->view.top = npc->view.bottom = PX(24);
 }
 
 static BOOL FindMarker(int event, int *x, int *y)
@@ -691,6 +726,23 @@ static int InRoom(int x, int margin)
 	return x;
 }
 
+// The cutscene's acts wait for event 1020's next <BOA. With no script running
+// (a level without the event), each moves on by itself after a while.
+static void Unscripted(NPCHAR *npc, int next, int wait)
+{
+	if (gTS.mode != 0)
+	{
+		arena.idle = 0;
+		return;
+	}
+	if (++arena.idle > wait)
+	{
+		arena.idle = 0;
+		npc->act_no = next;
+		npc->act_wait = 0;
+	}
+}
+
 // Out of the room the way it came: up through the top of the screen.
 static void Leave(NPCHAR *npc)
 {
@@ -709,7 +761,7 @@ static void Leave(NPCHAR *npc)
 static void GoOutside(NPCHAR *npc)
 {
 	arena.outside = TRUE;
-	arena.round = 5 + arena.crumble;
+	arena.round = 4 + arena.crumble / 2;
 	npc->act_no = ACT_OUTSIDE;
 	// A moment before it starts: the page is still opening the site up.
 	npc->act_wait = -60;
@@ -770,6 +822,7 @@ static void StartReach(int x, int aim)
 	hand->view.top = hand->view.bottom = PX(16);
 	arena.reach = 1;
 	arena.reachWait = 36 - aim; // aiming time left
+	arena.handLife = gBoss[0].life;
 	FlintEmit("reach", ScreenX(hand->x), 0);
 	PlaySoundObject(103, 1);
 }
@@ -779,6 +832,16 @@ static void ActHand(void)
 	NPCHAR *hand = &gBoss[PART_HAND];
 	if (!arena.reach)
 		return;
+
+	// Hurt enough through it, it snatches the hand back out.
+	if (arena.reach < 5 && arena.handLife - gBoss[0].life >= 24)
+	{
+		arena.reach = 5;
+		hand->damage = 0;
+		SetQuake(10);
+		PlaySoundObject(52, 1);
+		SetMoteBurst(hand->x, hand->y, 12, 0x500, MOTE_PURPLE);
+	}
 
 	switch (arena.reach)
 	{
@@ -792,7 +855,7 @@ static void ActHand(void)
 			{
 				arena.reach = 2;
 				hand->ym = 0x400;
-				hand->damage = 4;
+				hand->damage = arena.crumble >= 2 ? 5 : 4;
 				PlaySoundObject(110, 1);
 				FlintEmit("slam", ScreenX(hand->x), 0);
 			}
@@ -819,7 +882,7 @@ static void ActHand(void)
 			break;
 
 		case 3:
-			if (++arena.reachWait > 70 - arena.crumble * 8)
+			if (++arena.reachWait > 60 - arena.crumble * 8)
 			{
 				arena.reach = 4;
 				arena.reachWait = 0;
@@ -871,7 +934,7 @@ static void ActTilt(void)
 		return;
 
 	if (--arena.tiltWait > 12)
-		gMC.xm += arena.tilt * 0x2C;
+		gMC.xm += arena.tilt * (0x2C + arena.crumble * 0x0A);
 	if (arena.tiltWait == 0)
 		FlintEmit("untilt", 0, 0);
 }
@@ -897,7 +960,11 @@ static void ActOutside(NPCHAR *npc)
 	if (arena.reach || arena.tiltWait > 0)
 		return;
 
-	if (++npc->act_wait < 64 - arena.crumble * 10)
+	// Nothing new while the cutscene still has you.
+	if (!(g_GameFlags & 2))
+		return;
+
+	if (++npc->act_wait < 50 - arena.crumble * 8)
 		return;
 	npc->act_wait = 0;
 
@@ -918,27 +985,44 @@ static void ActOutside(NPCHAR *npc)
 		return;
 	}
 
+	// A volley of pieces, its hand, or the room tipped over; later on, the
+	// hand and the tipping come with pieces too.
 	int roll = Random(0, 99);
-	if (roll < 48)
+	if (roll < 40)
 	{
-		ThrowPiece(gMC.x + PX(Random(-48, 48)));
-		if (arena.crumble >= 2)
-			ThrowPiece(gMC.x + PX(Random(-96, 96)));
+		for (int i = arena.crumble >= 2 ? 3 : 2; i > 0; i--)
+			ThrowPiece(gMC.x + PX(Random(-40, 40)));
 	}
-	else if (roll < 84)
+	else if (roll < 85)
 	{
 		StartReach(gMC.x, arena.crumble * 6);
+		if (arena.crumble >= 1)
+			ThrowPiece(gMC.x + PX(Random(-64, 64)));
 	}
 	else
 	{
 		StartTilt(gMC.x < (arena.left + arena.right) / 2 ? 1 : -1);
+		if (arena.crumble >= 1)
+			ThrowPiece(gMC.x + PX(Random(-64, 64)));
 	}
+}
+
+static BOOL InCutscene(NPCHAR *npc)
+{
+	return npc->act_no == ACT_RAGE || (npc->act_no >= ACT_LOOK && npc->act_no <= ACT_BREAK + 1);
 }
 
 static void ActLastPhase(NPCHAR *npc)
 {
+	// Nothing comes apart during the cutscene.
+	if (InCutscene(npc) || !(g_GameFlags & 2))
+	{
+		arena.lastLife = npc->life;
+		return;
+	}
+
 	// How far it's torn things apart, by its life.
-	int crumble = npc->life <= 25 ? 3 : npc->life <= 50 ? 2 : npc->life <= 75 ? 1 : 0;
+	int crumble = npc->life <= kCrumbleLife[2] ? 3 : npc->life <= kCrumbleLife[1] ? 2 : npc->life <= kCrumbleLife[0] ? 1 : 0;
 	if (crumble > arena.crumble && npc->act_no < ACT_DIE)
 	{
 		arena.crumble = crumble;
@@ -951,16 +1035,57 @@ static void ActLastPhase(NPCHAR *npc)
 		FlintEmit("hurt", npc->life, arena.outside);
 	arena.lastLife = npc->life;
 
-	// The room is coming apart too: bits of its ceiling fall.
+	// The room is coming apart too: bits of its ceiling fall, and later on
+	// pieces of the site come down with them.
 	if (npc->act_no < ACT_DIE && ++arena.debris > 36 - arena.crumble * 8)
 	{
 		arena.debris = 0;
 		int x = arena.left + PX(Random(8, (arena.right - arena.left) / 0x200 - 8));
-		SetNpChar(NPC_BLOCK_SHARD, x, arena.top + PX(4), Random(-0x80, 0x80), 0, Random(0, 1), NULL, 0x100);
+		if (arena.crumble >= 2 && ++arena.debrisCount % 4 == 0)
+			SetNpChar(NPC_PAGE_PIECE, x, arena.top + PX(10), 0, 0x100, Random(0, PIECE_KINDS - 1), NULL, 0x100);
+		else
+			SetNpChar(NPC_BLOCK_SHARD, x, arena.top + PX(4), Random(-0x80, 0x80), 0, Random(0, 1), NULL, 0x100);
 	}
 
 	if (!arena.outside && npc->act_no >= ACT_FIGHT && npc->act_no < ACT_CRYSTALS)
 		++arena.insideWait;
+}
+
+// Everything it has going in the room goes: its hand and anything on the
+// way in, blocks, shadows, crystals and endermites. The platforms come back.
+static void ClearRoom(void)
+{
+	gBoss[PART_HAND].cond = 0;
+	arena.reach = 0;
+	arena.tiltWait = 0;
+	for (int i = 0; i < 4; i++)
+		arena.incoming[i].wait = 0;
+
+	for (int i = 0; i < BLOCKS; i++)
+	{
+		if (gBoss[PART_BLOCK + i].cond & 0x80)
+			Shatter(gBoss[PART_BLOCK + i].x, gBoss[PART_BLOCK + i].y);
+		gBoss[PART_BLOCK + i].cond = 0;
+		arena.blockFlying[i] = FALSE;
+	}
+	for (int i = 0; i < SHADOWS; i++)
+		gBoss[PART_SHADOW + i].cond = 0;
+	for (int i = 0; i < CRYSTALS; i++)
+	{
+		gBoss[PART_CRYSTAL + i].cond = 0;
+		arena.crystalAlive[i] = FALSE;
+	}
+
+	for (int i = 0; i < NPC_MAX; i++)
+	{
+		if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == NPC_ENDERMITE && gNPC[i].x > arena.left && gNPC[i].x < arena.right && gNPC[i].y < arena.floor)
+		{
+			SetMoteBurst(gNPC[i].x, gNPC[i].y, 6, 0x400, MOTE_PURPLE);
+			gNPC[i].cond = 0;
+		}
+	}
+
+	RestorePlatforms(TRUE);
 }
 
 static void Think(NPCHAR *npc)
@@ -977,13 +1102,23 @@ static void Think(NPCHAR *npc)
 
 	if (arena.phase == 2 && arena.stunned && npc->life <= kPhase3Life)
 	{
+		// The last phase opens with a cutscene (event 1020): the room is
+		// cleared and it can't be hurt until it's out of the screen.
 		arena.phase = 3;
+		ClearRoom();
+		Vulnerable(npc, FALSE);
+		npc->damage = 0;
+		Strike(npc, FALSE);
 		npc->act_no = ACT_RAGE;
+		npc->act_wait = 0;
+		arena.idle = 0;
+		StartTextScript(EVENT_RAGE);
+		FlintEmit("rage", ScreenX(npc->x), ScreenY(npc->y - PX(10)));
 		return;
 	}
 
 	// In the last phase it only stays in the room a while.
-	if (arena.phase == 3 && (arena.insideWait > 420 || arena.insideLife - npc->life >= 20))
+	if (arena.phase == 3 && (arena.insideWait > 400 || arena.insideLife - npc->life >= 45))
 	{
 		Leave(npc);
 		return;
@@ -1041,13 +1176,15 @@ static void Strike(NPCHAR *npc, BOOL on)
 	memset(swipe, 0, sizeof(*swipe));
 	swipe->cond = 0x80;
 	// Contact is checked against a small box at the player's centre, so the
-	// reach runs from above its head down to just over the floor.
-	swipe->x = npc->x + (npc->direct == 0 ? -PX(20) : PX(20));
+	// reach runs from above its head down to just over the floor. Its last
+	// form reaches further.
+	const int reach = arena.rage ? PX(28) : PX(20);
+	swipe->x = npc->x + (npc->direct == 0 ? -reach : reach);
 	swipe->y = npc->y;
 	swipe->damage = 3;
 	swipe->bits = npc_ignoreSolid;
-	swipe->hit.front = swipe->hit.back = PX(14);
-	swipe->hit.top = PX(22);
+	swipe->hit.front = swipe->hit.back = arena.rage ? PX(18) : PX(14);
+	swipe->hit.top = arena.rage ? PX(34) : PX(22);
 	swipe->hit.bottom = PX(22);
 }
 
@@ -1063,11 +1200,6 @@ static void Die(NPCHAR *npc)
 	}
 	arena.outside = FALSE;
 	npc->bits &= ~npc_ignoreSolid;
-	hand->cond = 0;
-	arena.reach = 0;
-	arena.tiltWait = 0;
-	for (int i = 0; i < 4; i++)
-		arena.incoming[i].wait = 0;
 	if (arena.phase == 3)
 		FlintEmit("die", ScreenX(npc->x), ScreenY(npc->y));
 
@@ -1078,32 +1210,8 @@ static void Die(NPCHAR *npc)
 	npc->act_wait = 0;
 	Strike(npc, FALSE);
 
-	for (int i = 0; i < BLOCKS; i++)
-	{
-		if (gBoss[PART_BLOCK + i].cond & 0x80)
-			Shatter(gBoss[PART_BLOCK + i].x, gBoss[PART_BLOCK + i].y);
-		gBoss[PART_BLOCK + i].cond = 0;
-		arena.blockFlying[i] = FALSE;
-	}
-	for (int i = 0; i < SHADOWS; i++)
-		gBoss[PART_SHADOW + i].cond = 0;
-	for (int i = 0; i < CRYSTALS; i++)
-	{
-		gBoss[PART_CRYSTAL + i].cond = 0;
-		arena.crystalAlive[i] = FALSE;
-	}
-
-	// Its endermites go with it.
-	for (int i = 0; i < NPC_MAX; i++)
-	{
-		if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == NPC_ENDERMITE && gNPC[i].x > arena.left && gNPC[i].x < arena.right && gNPC[i].y < arena.floor)
-		{
-			SetMoteBurst(gNPC[i].x, gNPC[i].y, 6, 0x400, MOTE_PURPLE);
-			gNPC[i].cond = 0;
-		}
-	}
-
-	RestorePlatforms(TRUE);
+	// Everything of its goes with it.
+	ClearRoom();
 	SetQuake(150);
 }
 
@@ -1151,6 +1259,9 @@ static void Setup(NPCHAR *npc)
 	npc->view.front = npc->view.back = PX(16);
 	npc->view.top = npc->view.bottom = PX(24);
 	npc->act_no = ACT_WAIT;
+	// Its last form's sheet, which the page writes (a level without one just
+	// doesn't show that form).
+	ReloadBitmap_File("Npc/NpcFlintRage", SURFACE_ID_FLINT_RAGE);
 	// A fresh fight: the page puts anything broken back.
 	FlintEmit("reset", 0, 0);
 }
@@ -1569,24 +1680,126 @@ void ActBossChar_Enderman(void)
 			break;
 
 		case ACT_RAGE:
-			// The last phase: it screams until the screen cracks, then climbs
-			// out through the top of it, onto fl1nt.dev.
+			// The last phase's cutscene: it gets up off the floor, shaking,
+			// and waits for the script.
 			npc->xm = 0;
-			npc->damage = 0;
-			Vulnerable(npc, FALSE);
+			FacePlayer(npc);
+			SetFrame(npc, npc->act_wait < 40 ? FRAME_STUN : FRAME_STAND);
+			if (npc->act_wait >= 40)
+				Tremble(npc);
+			if (npc->act_wait % 24 == 12)
+				SetNpChar(NPC_MOTE, npc->x + PX(Random(-8, 8)), npc->y - PX(20), 0, 0, MOTE_PURPLE, NULL, 0x100);
+			++npc->act_wait;
+			Unscripted(npc, ACT_LOOK, 100);
+			break;
+
+		case ACT_LOOK:
+			// It looks out of the screen, at whoever is behind it.
+			npc->act_no = ACT_LOOK + 1;
+			npc->act_wait = 0;
+			arena.idle = 0;
+			SetQuake(12);
+			PlaySoundObject(108, 1);
+			FlintEmit("look", ScreenX(npc->x), ScreenY(npc->y - PX(10)));
+			// Fallthrough
+		case ACT_LOOK + 1:
+			SetFrame(npc, FRAME_STARE);
+			if (npc->act_wait % 16 == 0)
+				SetNpChar(NPC_MOTE, npc->x + PX(Random(-10, 10)), npc->y - PX(24), 0, 0, MOTE_PINK, NULL, 0x100);
+			++npc->act_wait;
+			Unscripted(npc, ACT_TRANSFORM, 100);
+			break;
+
+		case ACT_TRANSFORM:
+			npc->act_no = ACT_TRANSFORM + 1;
+			npc->act_wait = 0;
+			SetQuake(160);
+			PlaySoundObject(26, 1);
+			PlaySoundObject(20, 1);
+			FlintEmit("transform", ScreenX(npc->x), ScreenY(npc->y - PX(10)));
+			// Fallthrough
+		case ACT_TRANSFORM + 1:
+		{
+			// It pulls what's left of /dev/null into itself and rises,
+			// flickering into its last form, while its life comes back.
+			const int t = npc->act_wait++;
+			npc->y = arena.floor - PX(24) - PX(t < 64 ? t / 4 : 16);
+			const int period = t < 50 ? 10 : t < 90 ? 6 : t < 120 ? 3 : 2;
+			arena.rage = (t / period) % 2 == 1;
+			SetFrame(npc, FRAME_SCREAM);
+			Tremble(npc);
+			if (t % 2 == 0)
+			{
+				// Motes from all around, falling into it.
+				const unsigned char deg = (unsigned char)Random(0, 255);
+				SetNpChar(NPC_MOTE, npc->x + GetCos(deg) * 52, npc->y - PX(12) + GetSin(deg) * 52, -GetCos(deg) * 52 / 29, -GetSin(deg) * 52 / 29, (Random(0, 2) ? MOTE_PURPLE : MOTE_WHITE) | MOTE_TRAVEL, NULL, 0x100);
+			}
+			if (t % 12 == 0)
+				PlaySoundObject(t < 100 ? 103 : 110, 1);
+			if (npc->life < kLife)
+			{
+				npc->life += 2;
+				if (npc->life > kLife)
+					npc->life = kLife;
+			}
+			if (t >= 150)
+			{
+				// Done: bigger, and back to full life.
+				arena.rage = TRUE;
+				npc->life = kLife;
+				arena.lastLife = kLife;
+				npc->hit.front = npc->hit.back = PX(9);
+				npc->hit.top = PX(32);
+				SetFlash(npc->x, npc->y, 2);
+				SetQuake(40);
+				PlaySoundObject(35, 1);
+				PlaySoundObject(116, 1);
+				SetMoteBurst(npc->x, npc->y - PX(16), 40, 0xA00, MOTE_PURPLE);
+				FlintEmit("transformed", ScreenX(npc->x), ScreenY(npc->y - PX(20)));
+				npc->act_no = ACT_TRANSFORMED;
+			}
+			break;
+		}
+
+		case ACT_TRANSFORMED:
+			npc->act_no = ACT_TRANSFORMED + 1;
+			npc->act_wait = 0;
+			arena.idle = 0;
+			// Fallthrough
+		case ACT_TRANSFORMED + 1:
+			// Its last form: it comes back down, screaming, then glares.
+			FacePlayer(npc);
+			if (npc->y < arena.floor - PX(24))
+			{
+				npc->y += PX(2);
+				if (npc->y > arena.floor - PX(24))
+					npc->y = arena.floor - PX(24);
+			}
+			SetFrame(npc, npc->act_wait < 50 ? FRAME_SCREAM : FRAME_STARE);
+			if (npc->act_wait < 50)
+				Tremble(npc);
+			++npc->act_wait;
+			Unscripted(npc, ACT_BREAK, 100);
+			break;
+
+		case ACT_BREAK:
+			npc->act_no = ACT_BREAK + 1;
+			npc->act_wait = 0;
+			SetQuake(120);
+			SetFlash(npc->x, npc->y, 2);
+			PlaySoundObject(26, 1);
+			PlaySoundObject(116, 1);
+			SetMoteBurst(npc->x, npc->y - PX(12), 30, 0x900, MOTE_PURPLE);
+			FlintEmit("break", ScreenX(npc->x), ScreenY(npc->y - PX(10)));
+			// Fallthrough
+		case ACT_BREAK + 1:
+			// It screams until the screen cracks, then climbs out through the
+			// top of it, onto fl1nt.dev.
+			npc->xm = 0;
+			npc->y = arena.floor - PX(24);
 			SetFrame(npc, npc->act_wait < 96 ? FRAME_SCREAM : FRAME_REACH);
 			if (npc->act_wait < 96)
 				Tremble(npc);
-			if (npc->act_wait == 0)
-			{
-				SetQuake(120);
-				SetFlash(npc->x, npc->y, 2);
-				PlaySoundObject(26, 1);
-				PlaySoundObject(116, 1);
-				SetMoteBurst(npc->x, npc->y - PX(12), 30, 0x900, MOTE_PURPLE);
-				StartTextScript(EVENT_RAGE);
-				FlintEmit("break", ScreenX(npc->x), ScreenY(npc->y - PX(10)));
-			}
 			if (npc->act_wait == 36 || npc->act_wait == 64)
 			{
 				SetQuake(30);
@@ -1699,7 +1912,7 @@ void ActBossChar_Enderman(void)
 		}
 	}
 
-	if (npc->act_no >= ACT_FIGHT && npc->act_no != ACT_FALL && npc->act_no < ACT_DIE && !(npc->act_no >= ACT_RAGE && npc->act_no <= ACT_DROP))
+	if (npc->act_no >= ACT_FIGHT && npc->act_no != ACT_FALL && npc->act_no < ACT_DIE && !(npc->act_no >= ACT_RAGE && npc->act_no <= ACT_DROP) && !InCutscene(npc))
 	{
 		// Walk, and fall off ledges.
 		npc->ym += 0x40;
@@ -1724,6 +1937,11 @@ void ActBossChar_Enderman(void)
 		if (arena.phase == 3)
 			ActLastPhase(npc);
 	}
+}
+
+int FlintBossRage(void)
+{
+	return arena.rage ? 1 : 0;
 }
 
 int FlintBossPhase(void)
@@ -1813,7 +2031,7 @@ void FlintBossStare(void)
 	NPCHAR *boss = &gBoss[0];
 	if (!(boss->cond & 0x80) || boss->code_char != 10 || arena.phase != 3 || !arena.outside)
 		return;
-	if (arena.reach || arena.tiltWait > 0 || arena.stareCooldown > 0)
+	if (arena.reach || arena.tiltWait > 0 || arena.stareCooldown > 0 || !(g_GameFlags & 2))
 		return;
 	arena.stareCooldown = 300;
 	PlaySoundObject(108, 1);
