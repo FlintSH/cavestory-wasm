@@ -7,6 +7,7 @@
 #include "BossAlmo1.h"
 #include "BossAlmo2.h"
 #include "BossBallos.h"
+#include "BossFlint.h"
 #include "BossFrog.h"
 #include "BossIronH.h"
 #include "BossOhm.h"
@@ -198,7 +199,7 @@ void ActBossChar_0()
 	;
 }
 
-BOSSFUNCTION gpBossFuncTbl[10] =
+BOSSFUNCTION gpBossFuncTbl[11] =
 {
 	ActBossChar_0,
 	ActBossChar_Omega,
@@ -209,7 +210,8 @@ BOSSFUNCTION gpBossFuncTbl[10] =
 	ActBossChar_Twin,
 	ActBossChar_Undead,
 	ActBossChar_Press,
-	ActBossChar_Ballos
+	ActBossChar_Ballos,
+	ActBossChar_Enderman
 };
 
 void ActBossChar()

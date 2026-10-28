@@ -6,8 +6,21 @@
 #include "Stage.h"
 #include "Game.h"
 #include "KeyControl.h"
+#include "Flags.h"
+#include "Web.h"
 extern SDL_AudioDeviceID audioDevice;
+
+int gWebFight = 0;
+
 extern "C" {
+// Call before main(): boot into fl1nt.dev's hidden fight instead of the game.
+EMSCRIPTEN_KEEPALIVE void web_fight(int on) {
+    gWebFight = on ? 1 : 0;
+}
+// Lets the page see script flags, e.g. the fight's victory flag.
+EMSCRIPTEN_KEEPALIVE int web_flag(int no) {
+    return (no < 0 || no >= 8000) ? 0 : GetNPCFlag(no);
+}
 EMSCRIPTEN_KEEPALIVE void web_pause(int pause) {
     gKey = gKeyTrg = 0;
     if (pause) emscripten_pause_main_loop(); else emscripten_resume_main_loop();
@@ -56,6 +69,14 @@ EMSCRIPTEN_KEEPALIVE void web_test_credit_step(int ticks) {
 }
 EMSCRIPTEN_KEEPALIVE int web_test_credits() { g_GameFlags |= 8; return StartCreditScript(); }
 EMSCRIPTEN_KEEPALIVE void web_test_illustration(int n) { SetCreditIllust(n); }
+// fl1nt.dev's hidden fight: inspect the enderman and set its life.
+EMSCRIPTEN_KEEPALIVE const char *web_test_boss() {
+    static char state[160];
+    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"block\":%d,\"blockX\":%d,\"blockY\":%d}",
+        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, gBoss[1].cond, gBoss[1].x, gBoss[1].y);
+    return state;
+}
+EMSCRIPTEN_KEEPALIVE void web_test_boss_life(int life) { gBoss[0].life = life; }
 EMSCRIPTEN_KEEPALIVE int web_test_save() {
     gMC.x = 15 * 16 * 512; gMC.y = 7 * 16 * 512;
     gMC.life = gMC.max_life = 3;

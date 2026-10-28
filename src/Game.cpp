@@ -44,6 +44,7 @@
 #include "Star.h"
 #include "Tags.h"
 #include "TextScr.h"
+#include "Web.h"
 #include "ValueView.h"
 
 int g_GameFlags;
@@ -700,10 +701,14 @@ void GameMainLoopSelector(MainLoopMeta *meta, int mode)
 			ExitMainLoop(0);
 			break;
 		case 1:
-			EnterMainLoop(ModeOpening, GameMainLoopSelector, NULL);
-			break;
 		case 2:
-			EnterMainLoop(ModeTitle, GameMainLoopSelector, NULL);
+			// The hidden fight has no opening or title: resets go back to the arena.
+			if (gWebFight)
+				EnterMainLoop(ModeAction, GameMainLoopSelector, NULL);
+			else if (mode == 1)
+				EnterMainLoop(ModeOpening, GameMainLoopSelector, NULL);
+			else
+				EnterMainLoop(ModeTitle, GameMainLoopSelector, NULL);
 			break;
 		case 3:
 			EnterMainLoop(ModeAction, GameMainLoopSelector, NULL);

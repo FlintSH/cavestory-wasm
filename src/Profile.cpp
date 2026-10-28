@@ -25,6 +25,7 @@
 #include "SelStage.h"
 #include "Stage.h"
 #include "Star.h"
+#include "Web.h"
 #include "Tags.h"
 #include "ValueView.h"
 
@@ -267,7 +268,20 @@ BOOL InitializeGame(HWND hWnd)
 	ClearPermitStage();
 	StartMapping();
 	InitFlags();
-	if (!TransferStage(13, 200, 10, 8))
+	BOOL loaded;
+	if (gWebFight)
+	{
+		// Load the silent track first, as the skipped opening would have. With
+		// no song loaded, regaining focus restarts music with a zero tempo and
+		// the mixer never finishes a buffer.
+		ChangeMusic(0);
+		loaded = TransferStage(FLINT_FIGHT_STAGE, 100, 3, 11);
+	}
+	else
+	{
+		loaded = TransferStage(13, 200, 10, 8);
+	}
+	if (!loaded)
 	{
 		#if defined(NONPORTABLE) && defined(WINDOWS)
 			#ifdef JAPANESE
