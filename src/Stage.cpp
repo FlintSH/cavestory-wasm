@@ -126,7 +126,7 @@ const STAGE_TABLE gTMT[96] = {
 	STAGE_ENTRY("White", "e_Blcn", 7, "bkFog", "Miza", "0", 9, "", ""),
 	STAGE_ENTRY("Oside", "Clock", 6, "bkMoon", "Moon", "0", 0, "Clock Room", "ŽžŒv‰®"),
 	// fl1nt.dev's hidden fight (cavestory-wasm addition; see docs/FLINT_FIGHT.md).
-	STAGE_ENTRY("Flint", "Flint", 0, "bkFlint", "Guest", "Flint", 10, "fl1nt.dev", "fl1nt.dev"),
+	STAGE_ENTRY("Flint", "Flint", 8, "bkFlint", "Void", "Flint", 10, "/dev/null", "/dev/null"),
 };
 
 BOOL TransferStage(int no, int w, int x, int y)

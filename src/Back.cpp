@@ -202,6 +202,29 @@ void PutBack(int fx, int fy)
 				PutBitmap4(&grcGame, (320 * (i + 1)) - 4 * gBack.fx % 320, 176 + (WINDOW_HEIGHT - 240), &rect, SURFACE_ID_LEVEL_BACKGROUND);
 			break;
 
+		case 8:
+		{
+			// fl1nt.dev's /dev/null. The top half of the image is a far sky
+			// that tiles and drifts at a quarter of the camera's speed. The
+			// bottom half is a band of distant islands (black is see-through)
+			// at half speed, riding higher as the camera goes down.
+			const int skyH = gBack.partsH / 2;
+			RECT sky = {0, 0, gBack.partsW, skyH};
+			const int skyX = ((fx / 0x800) % gBack.partsW + gBack.partsW) % gBack.partsW;
+			const int skyY = ((fy / 0x800) % skyH + skyH) % skyH;
+			for (int y = -skyY; y < WINDOW_HEIGHT; y += skyH)
+				for (int x = -skyX; x < WINDOW_WIDTH; x += gBack.partsW)
+					PutBitmap4(&grcGame, x, y, &sky, SURFACE_ID_LEVEL_BACKGROUND);
+
+			RECT band = {0, skyH, gBack.partsW, gBack.partsH};
+			const int bandX = ((fx / 0x400) % gBack.partsW + gBack.partsW) % gBack.partsW;
+			const int middle = (gMap.length * 16 - WINDOW_HEIGHT) / 2;
+			const int top = WINDOW_HEIGHT / 2 + (middle - fy / 0x200) / 3;
+			for (int x = -bandX; x < WINDOW_WIDTH; x += gBack.partsW)
+				PutBitmap3(&grcGame, x, top, &band, SURFACE_ID_LEVEL_BACKGROUND);
+			break;
+		}
+
 		default:
 			return;
 	}

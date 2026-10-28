@@ -49,6 +49,8 @@ EMSCRIPTEN_KEEPALIVE void web_key(int key, int down) {
 #include "Map.h"
 #include "Ending.h"
 #include "Boss.h"
+#include "BossFlint.h"
+#include "NpChar.h"
 #include "MycHit.h"
 extern CREDIT Credit;
 extern "C" {
@@ -71,12 +73,42 @@ EMSCRIPTEN_KEEPALIVE int web_test_credits() { g_GameFlags |= 8; return StartCred
 EMSCRIPTEN_KEEPALIVE void web_test_illustration(int n) { SetCreditIllust(n); }
 // fl1nt.dev's hidden fight: inspect the enderman and set its life.
 EMSCRIPTEN_KEEPALIVE const char *web_test_boss() {
-    static char state[160];
-    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"block\":%d,\"blockX\":%d,\"blockY\":%d}",
-        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, gBoss[1].cond, gBoss[1].x, gBoss[1].y);
+    static char state[200];
+    int crystals = 0, blocks = 0;
+    for (int i = 5; i < 9; i++) if (gBoss[i].cond & 0x80) ++crystals;
+    for (int i = 1; i < 4; i++) if (gBoss[i].cond & 0x80) ++blocks;
+    std::snprintf(state, sizeof(state), "{\"cond\":%d,\"act\":%d,\"x\":%d,\"y\":%d,\"life\":%d,\"phase\":%d,\"crystals\":%d,\"blocks\":%d,\"bits\":%d}",
+        gBoss[0].cond, gBoss[0].act_no, gBoss[0].x, gBoss[0].y, gBoss[0].life, FlintBossPhase(), crystals, blocks, gBoss[0].bits);
     return state;
 }
 EMSCRIPTEN_KEEPALIVE void web_test_boss_life(int life) { gBoss[0].life = life; }
+EMSCRIPTEN_KEEPALIVE void web_test_boss_phase(int phase) { FlintBossSetPhase(phase); }
+// Put the player on a tile (for walking QA through the level).
+EMSCRIPTEN_KEEPALIVE void web_test_warp(int x, int y) {
+    gMC.x = x * 16 * 0x200; gMC.y = y * 16 * 0x200; gMC.xm = gMC.ym = 0;
+}
+// Set the player's life and maximum.
+EMSCRIPTEN_KEEPALIVE void web_test_life(int life) { gMC.life = gMC.max_life = life; }
+// Run a script event, e.g. a chest's.
+EMSCRIPTEN_KEEPALIVE int web_test_event(int no) { return StartTextScript(no); }
+// Set a boss part's condition (0 destroys it, as if shot down).
+EMSCRIPTEN_KEEPALIVE void web_test_boss_part(int part, int cond) {
+    if (part >= 0 && part < BOSS_MAX) gBoss[part].cond = cond;
+}
+// Where the first live NPC of a code is, in the engine's fixed point.
+EMSCRIPTEN_KEEPALIVE const char *web_test_find(int code) {
+    static char found[64];
+    std::snprintf(found, sizeof(found), "null");
+    for (int i = 0; i < NPC_MAX; i++)
+        if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == code) { std::snprintf(found, sizeof(found), "{\"x\":%d,\"y\":%d}", gNPC[i].x, gNPC[i].y); break; }
+    return found;
+}
+// How many NPCs of a code are alive.
+EMSCRIPTEN_KEEPALIVE int web_test_count(int code) {
+    int count = 0;
+    for (int i = 0; i < NPC_MAX; i++) if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == code) ++count;
+    return count;
+}
 EMSCRIPTEN_KEEPALIVE int web_test_save() {
     gMC.x = 15 * 16 * 512; gMC.y = 7 * 16 * 512;
     gMC.life = gMC.max_life = 3;

@@ -9,6 +9,7 @@
 #include "File.h"
 #include "Generic.h"
 #include "NpcAct.h"
+#include "NpcFlint.h"
 
 NPC_TABLE *gNpcTable;
 
@@ -25,7 +26,10 @@ BOOL LoadNpcTable(const char *path)
 
 	num = size / 0x18;
 
-	gNpcTable = (NPC_TABLE*)malloc(num * sizeof(NPC_TABLE));
+	// fl1nt.dev's NPCs (NpcFlint.cpp) follow the original game's 361.
+	long extra = num == NPC_FLINT_FIRST ? NPC_FLINT_COUNT : 0;
+
+	gNpcTable = (NPC_TABLE*)malloc((num + extra) * sizeof(NPC_TABLE));
 	if (gNpcTable == NULL)
 		return FALSE;
 
@@ -81,6 +85,9 @@ BOOL LoadNpcTable(const char *path)
 		fread(&gNpcTable[n].view, 4, 1, fp);
 #endif
 
+	for (n = 0; n < extra; n++)
+		gNpcTable[num + n] = gFlintNpcTable[n];
+
 	fclose(fp);
 	return TRUE;
 }
@@ -95,7 +102,7 @@ void ReleaseNpcTable()
 }
 
 // Npc function table
-NPCFUNCTION gpNpcFuncTbl[361] =
+NPCFUNCTION gpNpcFuncTbl[NPC_FLINT_FIRST + NPC_FLINT_COUNT] =
 {
 	ActNpc000,
 	ActNpc001,
@@ -458,4 +465,12 @@ NPCFUNCTION gpNpcFuncTbl[361] =
 	ActNpc358,
 	ActNpc359,
 	ActNpc360,
+	ActNpc361,
+	ActNpc362,
+	ActNpc363,
+	ActNpc364,
+	ActNpc365,
+	ActNpc366,
+	ActNpc367,
+	ActNpc368,
 };
