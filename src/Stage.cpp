@@ -20,6 +20,7 @@
 #include "Organya.h"
 #include "TextScr.h"
 #include "ValueView.h"
+#include "Web.h"
 
 #ifdef JAPANESE
 #define STAGE_ENTRY(parts, map, bkType, back, npc, boss, boss_no, name_en, name_jp) {parts, map, bkType, back, npc, boss, boss_no, name_jp}
@@ -275,6 +276,7 @@ void ChangeMusic(int no)
 	SetOrganyaPosition(0);
 	PlayOrganyaMusic();
 	gMusicNo = no;
+	FlintEmit("music", no, 0); // fl1nt.dev's hidden level: the page shows what's playing
 }
 
 void ReCallMusic()
@@ -290,4 +292,5 @@ void ReCallMusic()
 	ChangeOrganyaVolume(100);
 	PlayOrganyaMusic();
 	gMusicNo = gOldNo;
+	FlintEmit("music", gMusicNo, 0);
 }

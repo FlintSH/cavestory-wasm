@@ -112,6 +112,18 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   s=await state();
   expect([s.boss.life,s.boss.rage]).toEqual([300,1]);
   await expect.poll(async()=>(await state()).me.flags&2,{timeout:10000}).toBe(2);
+  // Off the site it also throws visitors' cursors in, which turn up as stray
+  // cursors, and webring buttons (NPC 370) that fly straight across the room.
+  const cursors=await page.evaluate(()=>caveStory._web_test_count(362));
+  await page.evaluate(()=>caveStory._web_test_throw(1,160,0));
+  await expect.poll(()=>page.evaluate(()=>flint.includes('cursor')),{timeout:2000}).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(362)),{timeout:5000}).toBe(cursors+1);
+  await page.evaluate(()=>caveStory._web_test_throw(2,2,0));
+  await expect.poll(()=>page.evaluate(()=>flint.includes('button')),{timeout:2000}).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(370)),{timeout:5000}).toBe(1);
+  const button=()=>page.evaluate(()=>JSON.parse(caveStory.UTF8ToString(caveStory._web_test_find(370))));
+  const from=(await button()).x;
+  await expect.poll(async()=>(await button()).x,{timeout:2000}).toBeGreaterThan(from+0x2000);
   // Out there it throws pieces of the page in, reaches in or tips the room.
   // Staring at it (the page's cursor resting on it) makes it reach for you;
   // shooting its hand once it's slammed down hurts it.

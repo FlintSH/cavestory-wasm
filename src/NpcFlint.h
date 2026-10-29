@@ -18,7 +18,8 @@ enum
 	NPC_END_ROD = 367,
 	NPC_BLOCK_SHARD = 368,
 	NPC_PAGE_PIECE = 369,
-	NPC_FLINT_COUNT = 9
+	NPC_WEB_BUTTON = 370,
+	NPC_FLINT_COUNT = 10
 };
 
 // What a page piece (its direction) is: a piece of fl1nt.dev the enderman
@@ -68,3 +69,4 @@ void ActNpc366(NPCHAR *npc);
 void ActNpc367(NPCHAR *npc);
 void ActNpc368(NPCHAR *npc);
 void ActNpc369(NPCHAR *npc);
+void ActNpc370(NPCHAR *npc);

@@ -41,6 +41,7 @@ const NPC_TABLE gFlintNpcTable[NPC_FLINT_COUNT] = {
 	{npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_1, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {8, 8, 8, 8}}, // end rod
 	{npc_ignoreSolid, 1, SURFACE_ID_LEVEL_SPRITESET_2, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {4, 4, 4, 4}}, // block shard
 	{npc_shootable, 3, SURFACE_ID_LEVEL_SPRITESET_1, 31, 12, 1, 1, 3, {6, 4, 6, 6}, {8, 8, 8, 8}}, // page piece
+	{npc_shootable | npc_ignoreSolid, 2, SURFACE_ID_LEVEL_SPRITESET_1, 31, 12, 1, 1, 3, {12, 4, 12, 4}, {16, 6, 16, 6}}, // webring button
 };
 
 static void SetRect(NPCHAR *npc, int left, int top, int width, int height)
@@ -169,7 +170,9 @@ void ActNpc362(NPCHAR *npc)
 			npc->tgt_x = npc->x;
 			npc->tgt_y = npc->y;
 			npc->count1 = Random(0, 0xFF);
-			npc->count2 = (npc->x / PX(16)) % 3; // colour
+			// Colour: by where it is, or picked (direction 10-12) for one the
+			// enderman threw in off the site.
+			npc->count2 = npc->direct >= 10 ? (npc->direct - 10) % 3 : (npc->x / PX(16)) % 3;
 			npc->act_wait = Random(0, 40);
 			npc->act_no = 1;
 			// Fallthrough
@@ -518,4 +521,39 @@ void ActNpc369(NPCHAR *npc)
 	}
 
 	SetRect(npc, kPieces[kind].x, kPieces[kind].y, kPieces[kind].w, kPieces[kind].h);
+}
+
+// 370: one of the site's 88x31 webring buttons, flung in through the side of
+// the window. It spins straight across the room, through its walls, sinking a
+// little, and is gone. Direction 0 flies left, 2 right. Void sheet, (160, 0):
+// four 32x12 frames of it turning.
+void ActNpc370(NPCHAR *npc)
+{
+	if (npc->act_no == 0)
+	{
+		npc->act_no = 1;
+		npc->xm = npc->direct == 0 ? -0x600 : 0x600;
+		npc->ym = 0;
+	}
+
+	npc->ym += 0x4;
+	if (npc->ym > 0xC0)
+		npc->ym = 0xC0;
+	npc->x += npc->xm;
+	npc->y += npc->ym;
+
+	if (++npc->ani_wait > 2)
+	{
+		npc->ani_wait = 0;
+		npc->ani_no = (npc->ani_no + 1) % 4;
+	}
+
+	// Long gone out the far side by now.
+	if (++npc->act_wait > 160)
+	{
+		npc->cond = 0;
+		return;
+	}
+
+	SetRect(npc, 160 + npc->ani_no * 32, 0, 32, 12);
 }

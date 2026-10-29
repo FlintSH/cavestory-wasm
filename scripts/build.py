@@ -37,7 +37,7 @@ for lang in langs:
     exports=['_main','_web_state','_web_key','_web_pause','_web_fight','_web_flag','_web_fight_stare']
     if args.test_hooks:
         flags += ['-DWEB_TEST_HOOKS']
-        exports += ['_web_test_stage','_web_test_credits','_web_test_illustration','_web_test_load','_web_test_stats','_web_test_step','_web_test_credit_step','_web_test_save','_web_test_boss','_web_test_boss_life','_web_test_boss_phase','_web_test_warp','_web_test_count','_web_test_event','_web_test_boss_part','_web_test_life','_web_test_find','_web_test_exp','_web_test_boss_move']
+        exports += ['_web_test_stage','_web_test_credits','_web_test_illustration','_web_test_load','_web_test_stats','_web_test_step','_web_test_credit_step','_web_test_save','_web_test_boss','_web_test_boss_life','_web_test_boss_phase','_web_test_warp','_web_test_count','_web_test_event','_web_test_boss_part','_web_test_life','_web_test_find','_web_test_exp','_web_test_boss_move','_web_test_throw']
     if args.debug: flags += ['-g', '-sASSERTIONS=2', '-sSAFE_HEAP=1']
     sources = sorted(Path('src').glob('*.cpp'))
     # Warm the SDK ports once before parallel compilation.

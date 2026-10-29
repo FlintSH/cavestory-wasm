@@ -8,12 +8,12 @@
 - Stage 95 (`"/dev/null"`) is appended to the stage table: tileset `PrtFlint`, map `Flint`, background `bkFlint` with background type 8, NPC sheets `Void` and `Flint`, boss 10.
 - Stage 96 (`"lost+found"`), a secret room the level reaches through a hidden End gateway, follows it: tileset `PrtFound`, map `Found`, the same background and NPC sheets, no boss.
 - Background type 8 (`Back.cpp`) draws two layers from one 320x240 image: the top half is a sky that tiles and drifts at a quarter of the camera's speed; the bottom half is a band of distant islands (black is see-through) at half speed, riding higher as the camera goes down.
-- NPC codes 361-369 (`NpcFlint.cpp`) are the level's creatures and effects. Their table rows are built in and appended when `npc.tbl` has the original 361 entries, so the data files are unchanged:
+- NPC codes 361-370 (`NpcFlint.cpp`) are the level's creatures and effects. Their table rows are built in and appended when `npc.tbl` has the original 361 entries, so the data files are unchanged:
 
 | Code | | Sheet |
 | --- | --- | --- |
 | 361 | Endermite: hops at you, like First Cave's critters | `Void`, y 0 |
-| 362 | Stray cursor: drifts like First Cave's bats, then dives at you; three colours | `Void`, y 32 |
+| 362 | Stray cursor: drifts like First Cave's bats, then dives at you; three colours (by position, or direction 10-12 picks one) | `Void`, y 32 |
 | 363 | Mote emitter (invisible): lets motes drift up near the player | |
 | 364 | Mote: a speck of purple light (direction picks the colour; +4 keeps its speed) | `Void`, y 128 |
 | 365 | Ender Pearl: dropped by the enderman, runs its event when touched | `Void`, y 136 |
@@ -21,6 +21,7 @@
 | 367 | End rod: a flickering light | `Void`, y 152 |
 | 368 | Shard: End Stone, purpur or a scrap of the page (direction picks) | `Flint`, y 192; page scraps `Void`, y 64 |
 | 369 | A piece of fl1nt.dev the enderman threw in: card, link, logo, avatar, stat or badge (direction picks). Falls, hurts, and breaks into scraps when it lands | `Void`, y 32 |
+| 370 | One of the site's 88x31 webring buttons, flung in through the side: spins straight across the room, through its walls, sinking a little (direction 0 flies left, 2 right) | `Void`, x 160, y 0 |
 
 - Boss 10 (`BossFlint.cpp`) is the enderman. It reads its room from the map: event 300's marker is the room's centre, 0x41 tiles are its ceiling, walls, floor and pillars, and the low 0x05 platforms are what it pulls blocks out of (they come back after a while). Event 330 is where it waits, 320 its perch, 310-313 where its crystals grow.
   - The script plays the introduction with `<BOA0010` (turn), `<BOA0020` (glare), `<BOA0030` (scream) and `<BOA0100` (fight).
@@ -28,7 +29,7 @@
   - At two thirds of its life it teleports to its perch, runs event 1010, and grows crystals that heal it while it throws blocks and summons endermites. Each crystal beams at it and heals it a point about every half second, up to its full life. Destroying them (they explode) knocks it down, stunned.
   - At a third it starts the last phase's cutscene, event 1020. It clears the room (blocks, crystals, endermites), can't be hurt, and gets up off the floor; the script moves it on with `<BOA0320` (it looks out of the screen, at the person playing), `<BOA0330` (it transforms: it rises, flickers into its last form and its life fills back up to 300) and `<BOA0340` (it screams until the screen cracks and climbs out of the room through the top). Each of these acts sets itself up and runs as the next number. Without a script running, each moves on to the next by itself after two seconds, so a level without event 1020 can't get stuck. Nothing new starts outside until the script gives control back.
   - Its last form is half as big again: 48x72 frames in the same order as its first sheet's, from `Npc/NpcFlintRage.pbm`, which goes on a surface of its own (`SURFACE_ID_FLINT_RAGE`, 480x288; `PutBossChar` draws a boss part from `surf` when it's set). Its feet stay where they were; its hit box and the reach of its swipe grow with it.
-  - The website takes the rest from there (below): the game is pulled into a window on fl1nt.dev, and the enderman is out on the site. From outside it throws pieces of the page in, two or three at a time (code 369), reaches in with its hand (boss part 11: it hangs over you, slams down, sits, then drags across the floor; hits on the hand hurt the enderman, and after 24 damage it snatches the hand back), or tips the room so you slide. Later on the hand and the tipping come with pieces too. After four or five attacks it drops back in, enraged (faster, multiple throws, shadows that dash across the room), and leaves again after eight seconds or 45 damage. At 225, 150 and 75 life it tears more of the site apart, attacks sooner, slams and tips harder, and bits of the room's ceiling fall, some of them pieces of the page.
+  - The website takes the rest from there (below): the game is pulled into a window on fl1nt.dev, and the enderman is out on the site. From outside it throws pieces of the page in, two or three at a time (code 369), throws visitors' cursors in (they arrive as stray cursors, code 362, in the colour they had on the site), flings webring buttons through the room from the sides (code 370, low ones to jump and high ones to stay under), reaches in with its hand (boss part 11: it hangs over you, slams down, sits, then drags across the floor; hits on the hand hurt the enderman, and after 24 damage it snatches the hand back), or tips the room so you slide. Later on the hand and the tipping come with pieces too. Everything it throws is announced to the page about a second before it lands, so the page can show it being thrown, and a trip outside doesn't end until it has all landed. After four or five attacks it drops back in, enraged (faster, multiple throws, shadows that dash across the room), and leaves again after eight seconds or 45 damage. At 225, 150 and 75 life it tears more of the site apart, attacks sooner, slams and tips harder, and bits of the room's ceiling fall, some of them pieces of the page.
   - Its death runs event 1000, which should `<BOA0500` for the death; it then drops the Ender Pearl, which falls through the platforms to the floor and runs event 1100 when touched.
 - `web_flag(n)` exposes script flags, so the page can see when the level is won and left.
 - In fight mode the boss tells the page what it's doing by calling `Module.onFlint(name, a, b)`, if the page set one. Positions are in screen pixels (320x240):
@@ -43,6 +44,8 @@
 | `crack` | x, y | Twice more while it screams |
 | `out` | x | It has left the room |
 | `throw` | kind, x | It threw a piece of the page (kind 0-5, code 369's direction), which falls in at x about a second later |
+| `cursor` | colour, x | It threw a visitor's cursor (colour 0-2: pink, cyan, orange), which arrives at x about a second later |
+| `button` | direction, y | It flung a webring button in through the side (direction 2: in from the left, flying right), at height y, about a second later |
 | `reach`, `slam`, `unreach` | x | Its hand comes in, slams down, and goes back out |
 | `tilt`, `untilt` | direction | It tips the room (1 right, -1 left), and lets go |
 | `in` | x | It drops back into the room |
@@ -50,9 +53,10 @@
 | `crumble` | 1-3 | At 225, 150 and 75 life |
 | `stared` | | It noticed you (below) |
 | `die` | x, y | Its death, in the last phase |
+| `music` | track | The music changed (any time in fight mode; 0 is silence) |
 
 - `web_fight_stare()`: the page calls this when the visitor's cursor rests on the enderman while it's outside. If it isn't busy, and the cutscene is over, it reaches in for you.
-- QA builds (`--test-hooks`) add `web_test_boss()` (including its hand and whether it's in its last form), `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)` and `web_test_boss_move(x, y)`.
+- QA builds (`--test-hooks`) add `web_test_boss()` (including its hand and whether it's in its last form), `web_test_boss_life(life)`, `web_test_boss_phase(phase)`, `web_test_boss_part(part, cond)`, `web_test_warp(x, y)`, `web_test_count(code)`, `web_test_find(code)`, `web_test_event(n)`, `web_test_life(life)`, `web_test_exp(exp)`, `web_test_boss_move(x, y)` and `web_test_throw(what, a, b)` (throws a piece at screen x a, a cursor at screen x a, or a button flying a, high if b).
 
 ## Page side (FlintSH/web)
 
