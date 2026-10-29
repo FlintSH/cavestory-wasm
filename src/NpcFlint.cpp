@@ -481,7 +481,9 @@ void ActNpc368(NPCHAR *npc)
 
 // A piece of fl1nt.dev the enderman tore off the site and threw in, through
 // the top of the screen: it falls, and breaks where it lands. Shooting it
-// breaks it too. Its direction is which piece it is (PIECE_*).
+// breaks it too. Its direction is which piece it is (PIECE_*). It's drawn
+// from the page's picture of what it took (SetSitePicture), or without one,
+// from the Void sheet by its kind:
 static const struct { int x, y, w, h; } kPieces[PIECE_KINDS] = {
 	{80, 32, 32, 24}, // a card
 	{112, 32, 24, 12}, // a nav link
@@ -491,17 +493,33 @@ static const struct { int x, y, w, h; } kPieces[PIECE_KINDS] = {
 	{240, 32, 24, 8}, // a badge
 };
 
+void SetSitePicture(NPCHAR *npc, int slot, int x, int w, int h)
+{
+	const int left = slot % SITE_COLUMNS * SITE_CELL_W + x;
+	const int top = slot / SITE_COLUMNS * SITE_CELL_H;
+	npc->surf = SURFACE_ID_FLINT_SITE;
+	SetRect(npc, left, top, w, h);
+	npc->view.front = npc->view.back = PX(w / 2);
+	npc->view.top = npc->view.bottom = PX(h / 2);
+	npc->hit.front = npc->hit.back = PX(w / 2 > 4 ? w / 2 - 2 : 2);
+	npc->hit.top = npc->hit.bottom = PX(h / 2 > 3 ? h / 2 - 1 : 2);
+}
+
 void ActNpc369(NPCHAR *npc)
 {
 	const int kind = npc->direct % PIECE_KINDS;
+	const BOOL pictured = npc->surf == SURFACE_ID_FLINT_SITE;
 
 	if (npc->act_no == 0)
 	{
 		npc->act_no = 1;
-		npc->view.front = npc->view.back = PX(kPieces[kind].w / 2);
-		npc->view.top = npc->view.bottom = PX(kPieces[kind].h / 2);
-		npc->hit.front = npc->hit.back = PX(kPieces[kind].w / 2 - 2);
-		npc->hit.top = npc->hit.bottom = PX(kPieces[kind].h / 2 - 1);
+		if (!pictured)
+		{
+			npc->view.front = npc->view.back = PX(kPieces[kind].w / 2);
+			npc->view.top = npc->view.bottom = PX(kPieces[kind].h / 2);
+			npc->hit.front = npc->hit.back = PX(kPieces[kind].w / 2 - 2);
+			npc->hit.top = npc->hit.bottom = PX(kPieces[kind].h / 2 - 1);
+		}
 	}
 
 	npc->ym += 0x28;
@@ -520,13 +538,15 @@ void ActNpc369(NPCHAR *npc)
 		return;
 	}
 
-	SetRect(npc, kPieces[kind].x, kPieces[kind].y, kPieces[kind].w, kPieces[kind].h);
+	if (!pictured)
+		SetRect(npc, kPieces[kind].x, kPieces[kind].y, kPieces[kind].w, kPieces[kind].h);
 }
 
 // 370: one of the site's 88x31 webring buttons, flung in through the side of
-// the window. It spins straight across the room, through its walls, sinking a
-// little, and is gone. Direction 0 flies left, 2 right. Void sheet, (160, 0):
-// four 32x12 frames of it turning.
+// the window. It flies straight across the room, through its walls, sinking
+// a little, and is gone. Direction 0 flies left, 2 right. Drawn from the
+// page's picture of that button (SetSitePicture), at half size; or else
+// from the Void sheet, (160, 0): four 32x12 frames of one turning.
 void ActNpc370(NPCHAR *npc)
 {
 	if (npc->act_no == 0)
@@ -555,5 +575,6 @@ void ActNpc370(NPCHAR *npc)
 		return;
 	}
 
-	SetRect(npc, 160 + npc->ani_no * 32, 0, 32, 12);
+	if (npc->surf != SURFACE_ID_FLINT_SITE)
+		SetRect(npc, 160 + npc->ani_no * 32, 0, 32, 12);
 }

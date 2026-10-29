@@ -6,6 +6,7 @@
 
 #include "CommonDefines.h"
 #include "Draw.h"
+#include "NpcFlint.h"
 #include "Ending.h"
 #include "PixTone.h"
 #include "Sound.h"
@@ -207,6 +208,7 @@ BOOL LoadGenericData()
 		MakeSurface_Generic(320, 240, SURFACE_ID_LEVEL_SPRITESET_1, FALSE);
 		MakeSurface_Generic(320, 240, SURFACE_ID_LEVEL_SPRITESET_2, FALSE);
 		MakeSurface_Generic(480, 288, SURFACE_ID_FLINT_RAGE, FALSE);
+		MakeSurface_Generic(SITE_COLUMNS * SITE_CELL_W, SITE_SLOTS / SITE_COLUMNS * SITE_CELL_H, SURFACE_ID_FLINT_SITE, FALSE);
 		MakeSurface_Generic(WINDOW_WIDTH, 16 * MAX_STRIP, SURFACE_ID_CREDIT_CAST, FALSE);
 
 		pt_size = 0;

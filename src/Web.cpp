@@ -37,6 +37,15 @@ EMSCRIPTEN_KEEPALIVE int web_flag(int no) {
 EMSCRIPTEN_KEEPALIVE void web_fight_stare() {
     FlintBossStare();
 }
+// The page's pictures of what the enderman takes off the site, so what lands
+// in the room looks like what it took (FlintSitePicture in BossFlint.h).
+EMSCRIPTEN_KEEPALIVE void web_site_picture(int what, int index, int slot, int size) {
+    FlintSitePicture(what, index, slot, size);
+}
+// It rewrote Npc/NpcSite.pbm, the sheet they're in.
+EMSCRIPTEN_KEEPALIVE void web_site_reload() {
+    FlintSiteReload();
+}
 EMSCRIPTEN_KEEPALIVE void web_pause(int pause) {
     gKey = gKeyTrg = 0;
     if (pause) emscripten_pause_main_loop(); else emscripten_resume_main_loop();
@@ -68,6 +77,7 @@ EMSCRIPTEN_KEEPALIVE void web_key(int key, int down) {
 #include "BossFlint.h"
 #include "NpChar.h"
 #include "MycHit.h"
+#include "NpcHit.h"
 #include "MycParam.h"
 extern CREDIT Credit;
 extern "C" {
@@ -81,7 +91,7 @@ EMSCRIPTEN_KEEPALIVE int web_test_stage(int stage) {
     return loaded;
 }
 EMSCRIPTEN_KEEPALIVE void web_test_step(int ticks) {
-    for (int i=0;i<ticks;i++) { ActNpChar(); ActBossChar(); ActMyChar(FALSE); HitMyCharMap(); }
+    for (int i=0;i<ticks;i++) { ActNpChar(); ActBossChar(); ActMyChar(FALSE); HitMyCharMap(); HitNpCharMap(); }
 }
 EMSCRIPTEN_KEEPALIVE void web_test_credit_step(int ticks) {
     for (int i=0;i<ticks;i++) { ActionCredit(); ActionStripper(); ActionIllust(); }
@@ -123,10 +133,10 @@ EMSCRIPTEN_KEEPALIVE void web_test_boss_part(int part, int cond) {
 }
 // Where the first live NPC of a code is, in the engine's fixed point.
 EMSCRIPTEN_KEEPALIVE const char *web_test_find(int code) {
-    static char found[64];
+    static char found[128];
     std::snprintf(found, sizeof(found), "null");
     for (int i = 0; i < NPC_MAX; i++)
-        if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == code) { std::snprintf(found, sizeof(found), "{\"x\":%d,\"y\":%d}", gNPC[i].x, gNPC[i].y); break; }
+        if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == code) { std::snprintf(found, sizeof(found), "{\"x\":%d,\"y\":%d,\"surf\":%d,\"w\":%d,\"h\":%d}", gNPC[i].x, gNPC[i].y, (int)gNPC[i].surf, (int)(gNPC[i].rect.right - gNPC[i].rect.left), (int)(gNPC[i].rect.bottom - gNPC[i].rect.top)); break; }
     return found;
 }
 // How many NPCs of a code are alive.
