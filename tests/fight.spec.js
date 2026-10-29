@@ -55,7 +55,8 @@ async function boot(page,errors,cutscene){
     copy('/data/Npc/NpcGuest.pbm','/data/Npc/NpcFlintRage.pbm');
     window.caveStory=game;
     window.flint=[];
-    game.onFlint=name=>flint.push(name);
+    window.said=[];
+    game.onFlint=(name,a,b)=>{flint.push(name);said.push([name,a,b]);};
     game._web_fight(1);
     game.callMain([]);
     canvas.focus();
@@ -108,7 +109,13 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   await expect.poll(async()=>(await state()).boss.phase,{timeout:15000}).toBe(3);
   await expect.poll(()=>page.evaluate(()=>flint[0]),{timeout:5000}).toBe('rage');
   expect((await state()).me.flags&2).toBe(0);
+  // It climbs out through the middle of the top of the screen (on the
+  // website, it's on top of the game's window there), wherever it was.
+  await page.evaluate(()=>{window.leaving=[];const f=()=>{const b=JSON.parse(caveStory.UTF8ToString(caveStory._web_test_boss()));if(b.act===301)leaving.push(b.x);if(!flint.includes('out'))requestAnimationFrame(f);};f();});
   await expect.poll(()=>page.evaluate(()=>flint.slice(0,8).join(' ')),{timeout:30000}).toBe(CUTSCENE.join(' '));
+  const leaving=await page.evaluate(()=>leaving);
+  expect(leaving.length).toBeGreaterThan(0);
+  expect(Math.abs(leaving[leaving.length-1]-160*0x200)).toBeLessThan(20*0x200);
   s=await state();
   expect([s.boss.life,s.boss.rage]).toEqual([300,1]);
   await expect.poll(async()=>(await state()).me.flags&2,{timeout:10000}).toBe(2);
@@ -124,6 +131,21 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   const button=()=>page.evaluate(()=>JSON.parse(caveStory.UTF8ToString(caveStory._web_test_find(370))));
   const from=(await button()).x;
   await expect.poll(async()=>(await button()).x,{timeout:2000}).toBeGreaterThan(from+0x2000);
+  // A piece that breaks into three, and a stack of three buttons from the
+  // right with the middle one high: one word for each (what, how many, and
+  // for the buttons which are high), then "thrown" as each goes in, shortly
+  // before it's in the room.
+  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(370)),{timeout:5000}).toBe(0);
+  await page.evaluate(()=>{said.length=0;caveStory._web_test_throw(0,160,3);});
+  await expect.poll(()=>page.evaluate(()=>said.some(w=>w[0]==='throw'&&w[1]>>4===3)),{timeout:2000}).toBe(true);
+  expect(await page.evaluate(()=>said.some(w=>w[0]==='thrown'))).toBe(false);
+  await expect.poll(()=>page.evaluate(()=>said.some(w=>w[0]==='thrown'&&w[1]===0)),{timeout:5000}).toBe(true);
+  expect(await page.evaluate(()=>caveStory._web_test_count(369))).toBe(0);
+  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(369)),{timeout:3000}).toBe(3);
+  await page.evaluate(()=>{said.length=0;caveStory._web_test_throw(2,0,(3<<4)|2);});
+  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(370)),{timeout:8000}).toBe(3);
+  const stack=await page.evaluate(()=>said.filter(w=>w[0]==='button'||w[0]==='thrown'));
+  expect(stack).toEqual([['button',0|3<<4|2<<8,expect.any(Number)],['thrown',2,0],['thrown',2,0],['thrown',2,0]]);
   // Out there it throws pieces of the page in, reaches in or tips the room.
   // Staring at it (the page's cursor resting on it) makes it reach for you;
   // shooting its hand once it's slammed down hurts it.

@@ -206,7 +206,7 @@ static struct
 	int debris, debrisCount;
 	// Things off the site on their way in (INCOMING_*): where and when each
 	// lands, and what it is.
-	struct { int wait, x, y, kind, what; BOOL told; } incoming[8];
+	struct { int wait, x, y, kind, what, count; BOOL told; } incoming[8];
 	BOOL rage; // in its last form, drawn from SURFACE_ID_FLINT_RAGE
 	int idle; // cutscene frames without a script to move it on
 	int handLife; // its life when its hand came in
@@ -754,14 +754,15 @@ static void Unscripted(NPCHAR *npc, int next, int wait)
 	}
 }
 
-// Out of the room the way it came: up through the top of the screen.
+// Out of the room the way it came: up through the top of the screen, in
+// the middle (it's on top of the window there, on the page).
 static void Leave(NPCHAR *npc)
 {
 	Vulnerable(npc, FALSE);
 	Strike(npc, FALSE);
 	npc->damage = 0;
-	npc->xm = 0;
 	npc->ym = -0x900;
+	npc->xm = ((arena.left + arena.right) / 2 - npc->x) / ((npc->y - (arena.top - PX(48))) / 0x900 + 1);
 	npc->bits |= npc_ignoreSolid; // through platforms and ceiling alike
 	npc->act_no = ACT_LEAVE;
 	npc->act_wait = 0;
@@ -774,8 +775,9 @@ static void GoOutside(NPCHAR *npc)
 	arena.outside = TRUE;
 	arena.round = 4 + arena.crumble / 2;
 	npc->act_no = ACT_OUTSIDE;
-	// A moment before it starts: the page is still opening the site up.
-	npc->act_wait = -60;
+	// A moment before it starts: the page is still opening the site up (and
+	// the first time, out of the cutscene, it types its words into the site).
+	npc->act_wait = g_GameFlags & 2 ? -60 : -120;
 	npc->xm = npc->ym = 0;
 	npc->x = (arena.left + arena.right) / 2;
 	npc->y = arena.top - PX(64);
@@ -784,32 +786,46 @@ static void GoOutside(NPCHAR *npc)
 }
 
 // Something it takes off the site, on its way in: it arrives in the room
-// `wait` frames from now. The page is told (FlintEmit) when it's that long
-// from arriving that the page can show it being thrown: kLead frames.
-static const int kLead[3] = {46, 52, 50}; // INCOMING_*
+// `wait` frames from now. The page is told (FlintEmit) when it's kLead
+// frames from arriving: long enough to show it plainly being taken off the
+// page, held up, and thrown. Told already: it just falls in, unannounced.
+// Either way the page is told again kThrow frames before it lands, as it's
+// thrown, so the page's throw lands with it however fast the game is
+// running; and for the last kWarn frames motes trickle in where it'll land.
+static const int kLead[3] = {108, 108, 108}; // INCOMING_*
+static const int kThrow = 23;
+static const int kWarn = 40;
 
-static int Incoming(int what, int x, int y, int kind, int wait)
+static int Incoming(int what, int x, int y, int kind, int count, int later, BOOL told)
 {
 	for (int i = 0; i < 8; i++)
 	{
 		if (arena.incoming[i].wait > 0)
 			continue;
-		arena.incoming[i].wait = wait < kLead[what] ? kLead[what] : wait;
+		arena.incoming[i].wait = kLead[what] + later;
 		arena.incoming[i].what = what;
 		arena.incoming[i].x = x;
 		arena.incoming[i].y = y;
 		arena.incoming[i].kind = kind;
-		arena.incoming[i].told = FALSE;
+		arena.incoming[i].count = count;
+		arena.incoming[i].told = told;
 		return i;
 	}
 	return -1;
 }
 
 // It tears a piece off the site and throws it in through the top of the
-// screen; later, a moment apart, when it throws more than one.
-static void ThrowPiece(int x, int later)
+// screen, where it breaks into `count` pieces that fall on you.
+static void ThrowPiece(int x, int count)
 {
-	Incoming(INCOMING_PIECE, InRoom(x, PX(20)), 0, Random(0, PIECE_KINDS - 1), kLead[INCOMING_PIECE] + later);
+	Incoming(INCOMING_PIECE, InRoom(x, PX(20)), 0, Random(0, PIECE_KINDS - 1), count, 0, FALSE);
+}
+
+// A piece of the site that just falls in through the top (with its hand or
+// the tipping, so the page has its hands full).
+static void DropPiece(int x)
+{
+	Incoming(INCOMING_PIECE, InRoom(x, PX(20)), 0, Random(0, PIECE_KINDS - 1), 1, 20, TRUE);
 }
 
 // Stray cursors in the room, from the site or the level.
@@ -822,21 +838,47 @@ static int Cursors(void)
 	return count;
 }
 
-// It snatches a visitor's cursor off the site and throws it in: a stray
-// cursor, in its colour, that hunts you.
-static void ThrowCursor(int x, int later)
+// It snatches a handful of visitors' cursors off the site and throws them
+// in: stray cursors, in their colour, that hunt you.
+static void ThrowCursors(int x, int count)
 {
-	Incoming(INCOMING_CURSOR, InRoom(x, PX(24)), arena.top + PX(28), Random(0, 2), kLead[INCOMING_CURSOR] + later);
+	Incoming(INCOMING_CURSOR, InRoom(x, PX(24 + 20 * count)), arena.top + PX(28), Random(0, 2), count, 0, FALSE);
 }
 
-// It flings one of the site's webring buttons in through the side of the
-// window: low (jump it) or high (stay down). dir is where it flies (0 left,
-// 2 right).
-static void ThrowButton(int dir, BOOL high, int later)
+// It grabs a stack of the site's webring buttons and flings them in through
+// the side of the window one after another, each low (jump it) or high
+// (stay down) by `high`'s bits. dir is where they fly (0 left, 2 right).
+static void ThrowButtons(int dir, int count, int high)
 {
-	const int y = arena.floor - PX(high ? 34 : 8);
 	const int x = dir == 2 ? arena.left - PX(8) : arena.right + PX(8);
-	Incoming(INCOMING_BUTTON, x, y, dir, kLead[INCOMING_BUTTON] + later);
+	for (int i = 0; i < count; i++)
+		Incoming(INCOMING_BUTTON, x, arena.floor - PX(high & (1 << i) ? 34 : 8), dir, high, i * 20, i > 0);
+}
+
+// Motes where something from the site is about to land: down from the
+// ceiling over each piece or cursor, or in from the wall a button comes
+// through, at its height.
+static void Warn(int i)
+{
+	const int x = arena.incoming[i].x;
+	const int count = arena.incoming[i].count;
+	switch (arena.incoming[i].what)
+	{
+		case INCOMING_PIECE:
+			for (int k = 0; k < count; k++)
+				SetNpChar(NPC_MOTE, InRoom(x + PX((k - (count - 1) / 2) * 36 + Random(-6, 6)), PX(20)), arena.top + PX(4), 0, 0x280, MOTE_WHITE | MOTE_TRAVEL, NULL, 0x100);
+			break;
+		case INCOMING_CURSOR:
+			for (int k = 0; k < count; k++)
+				SetNpChar(NPC_MOTE, InRoom(x + PX((k * 2 - (count - 1)) * 20 + Random(-4, 4)), PX(24)), arena.top + PX(4), 0, 0x280, MOTE_CYAN | MOTE_TRAVEL, NULL, 0x100);
+			break;
+		case INCOMING_BUTTON:
+		{
+			const BOOL fromLeft = arena.incoming[i].kind == 2;
+			SetNpChar(NPC_MOTE, fromLeft ? arena.left + PX(2) : arena.right - PX(2), arena.incoming[i].y + PX(Random(-3, 3)), fromLeft ? 0x280 : -0x280, 0, MOTE_WHITE | MOTE_TRAVEL, NULL, 0x100);
+			break;
+		}
+	}
 }
 
 static void ActIncoming(void)
@@ -849,29 +891,48 @@ static void ActIncoming(void)
 		const int x = arena.incoming[i].x;
 		if (!arena.incoming[i].told && arena.incoming[i].wait <= kLead[what])
 		{
+			// For a stack of buttons, the page is told about them all at once:
+			// how many, and which are high (count holds those bits).
 			arena.incoming[i].told = TRUE;
 			if (what == INCOMING_PIECE)
-				FlintEmit("throw", arena.incoming[i].kind, ScreenX(x));
+				FlintEmit("throw", arena.incoming[i].kind | arena.incoming[i].count << 4, ScreenX(x));
 			else if (what == INCOMING_CURSOR)
-				FlintEmit("cursor", arena.incoming[i].kind, ScreenX(x));
+				FlintEmit("cursor", arena.incoming[i].kind | arena.incoming[i].count << 4, ScreenX(x));
 			else
-				FlintEmit("button", arena.incoming[i].kind, ScreenY(arena.incoming[i].y));
+			{
+				int stack = 1;
+				for (int k = 0; k < 8; k++)
+					if (k != i && arena.incoming[k].wait > arena.incoming[i].wait && arena.incoming[k].what == INCOMING_BUTTON)
+						++stack;
+				FlintEmit("button", arena.incoming[i].kind | stack << 4 | arena.incoming[i].count << 8, ScreenY(arena.floor - PX(8)));
+			}
 		}
+		if (arena.incoming[i].wait == kThrow)
+			FlintEmit("thrown", what, 0);
+		if (arena.incoming[i].wait <= kWarn && arena.incoming[i].wait % 5 == 0)
+			Warn(i);
 		if (--arena.incoming[i].wait > 0)
 			continue;
 		switch (what)
 		{
 			case INCOMING_PIECE:
-			{
-				const int xm = (gMC.x > x ? 1 : -1) * Random(0x80, 0x240);
-				SetNpChar(NPC_PAGE_PIECE, x, arena.top + PX(10), xm, 0x100, arena.incoming[i].kind, NULL, 0x100);
-				SetMoteBurst(x, arena.top + PX(6), 6, 0x400, MOTE_WHITE);
+				// It breaks apart coming in: its pieces fall spread out.
+				for (int k = 0; k < arena.incoming[i].count; k++)
+				{
+					const int px = InRoom(x + PX((k - (arena.incoming[i].count - 1) / 2) * 36 + Random(-6, 6)), PX(20));
+					const int xm = (gMC.x > px ? 1 : -1) * Random(0x80, 0x240);
+					SetNpChar(NPC_PAGE_PIECE, px, arena.top + PX(10 + k * 6), xm, 0x100, (arena.incoming[i].kind + k) % PIECE_KINDS, NULL, 0x100);
+				}
+				SetMoteBurst(x, arena.top + PX(6), 6 + arena.incoming[i].count * 3, 0x400, MOTE_WHITE);
 				PlaySoundObject(39, 1);
 				break;
-			}
 			case INCOMING_CURSOR:
-				SetNpChar(NPC_STRAY_CURSOR, x, arena.incoming[i].y, 0, 0, 10 + arena.incoming[i].kind, NULL, 0x100);
-				SetMoteBurst(x, arena.top + PX(6), 6, 0x400, MOTE_CYAN);
+				for (int k = 0; k < arena.incoming[i].count; k++)
+				{
+					const int cx = InRoom(x + PX((k * 2 - (arena.incoming[i].count - 1)) * 20), PX(24));
+					SetNpChar(NPC_STRAY_CURSOR, cx, arena.incoming[i].y + PX(k % 2 * 10), 0, 0, 10 + arena.incoming[i].kind, NULL, 0x100);
+					SetMoteBurst(cx, arena.top + PX(6), 5, 0x400, MOTE_CYAN);
+				}
 				PlaySoundObject(39, 1);
 				break;
 			case INCOMING_BUTTON:
@@ -1075,36 +1136,37 @@ static void ActOutside(NPCHAR *npc)
 	// hand and the tipping come with pieces too, and there's more of the rest.
 	const int more = arena.crumble >= 2 ? 1 : 0;
 	int roll = Random(0, 99);
-	if (roll >= 72 && roll < 86 && Cursors() >= 3)
+	if (roll >= 72 && roll < 86 && Cursors() + 2 + more > 4)
 		roll = 86; // enough cursors already
 	if (roll < 30)
 	{
-		for (int i = 0; i < 2 + more; i++)
-			ThrowPiece(gMC.x + PX(Random(-40, 40)), i * 16);
+		ThrowPiece(gMC.x + PX(Random(-40, 40)), 2 + more);
 	}
 	else if (roll < 62)
 	{
 		StartReach(gMC.x, arena.crumble * 6);
 		if (arena.crumble >= 1)
-			ThrowPiece(gMC.x + PX(Random(-64, 64)), 20);
+			DropPiece(gMC.x + PX(Random(-64, 64)));
 	}
 	else if (roll < 72)
 	{
 		StartTilt(gMC.x < (arena.left + arena.right) / 2 ? 1 : -1);
 		if (arena.crumble >= 1)
-			ThrowPiece(gMC.x + PX(Random(-64, 64)), 20);
+			DropPiece(gMC.x + PX(Random(-64, 64)));
 	}
 	else if (roll < 86)
 	{
-		for (int i = 0; i < 2 + more; i++)
-			ThrowCursor(arena.left + PX(Random(40, (arena.right - arena.left) / 0x200 - 40)), i * 30);
+		ThrowCursors(arena.left + PX(Random(60, (arena.right - arena.left) / 0x200 - 60)), 2 + more);
 	}
 	else
 	{
-		// From alternating sides, low and high mixed so you have to read them.
-		const int first = Random(0, 1) ? 0 : 2;
-		for (int i = 0; i < 2 + more; i++)
-			ThrowButton(i % 2 ? 2 - first : first, Random(0, 2) == 0, i * 40);
+		// A stack of them from one side, low and high mixed so you have to
+		// read them (never all high).
+		const int count = 2 + more;
+		int high = Random(0, (1 << count) - 1);
+		if (high == (1 << count) - 1)
+			high = 0;
+		ThrowButtons(Random(0, 1) ? 0 : 2, count, high);
 	}
 }
 
@@ -1914,6 +1976,7 @@ void ActBossChar_Enderman(void)
 
 		case ACT_LEAVE:
 			SetFrame(npc, FRAME_REACH);
+			npc->x += npc->xm;
 			npc->y += npc->ym;
 			if (npc->act_wait++ % 3 == 0)
 				SetMoteBurst(npc->x, npc->y + PX(16), 3, 0x300, MOTE_PURPLE);
@@ -2044,11 +2107,13 @@ void FlintBossTestThrow(int what, int a, int b)
 {
 	const int x = gFrame.x + PX(a);
 	if (what == INCOMING_PIECE)
-		ThrowPiece(x, 0);
+		ThrowPiece(x, b > 0 ? b : 1);
 	else if (what == INCOMING_CURSOR)
-		ThrowCursor(x, 0);
-	else
-		ThrowButton(a, b != 0, 0);
+		ThrowCursors(x, b > 0 ? b : 1);
+	else if (what == INCOMING_BUTTON)
+		ThrowButtons(a, b >> 4 > 0 ? b >> 4 : 1, b & 15);
+	else if (gBoss[0].act_no == ACT_OUTSIDE)
+		gBoss[0].act_wait = a ? -1000000 : 0; // 3: out there, it does nothing of its own while a
 }
 
 int FlintBossRage(void)

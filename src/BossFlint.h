@@ -14,7 +14,9 @@ void FlintBossStare(void);
 int FlintBossPhase(void);
 int FlintBossRage(void); // in its last form
 
-// QA builds: throw something in off the site now (0 a piece at screen x a, 1 a
-// cursor at screen x a, 2 a webring button flying a (0 left, 2 right), high if b).
+// QA builds: throw something in off the site now: 0 a piece at screen x a
+// that breaks into b pieces, 1 b cursors at screen x a, 2 a stack of b >> 4
+// webring buttons flying a (0 left, 2 right), high by b & 15's bits. 3: while
+// a, out there it does nothing of its own.
 void FlintBossTestThrow(int what, int a, int b);
 void FlintBossSetPhase(int phase);
