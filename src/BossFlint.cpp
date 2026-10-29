@@ -205,8 +205,13 @@ static struct
 	int tilt, tiltWait; // the screen tipped one way (-1, 1)
 	int debris, debrisCount;
 	// Things off the site on their way in (INCOMING_*): where and when each
-	// lands, and what it is.
-	struct { int wait, x, y, kind, what, count; BOOL told; } incoming[8];
+	// lands, and what it is. picture: the page's picture of it, once it's
+	// drawn one (its SURFACE_ID_FLINT_SITE slot + 1, w by h).
+	struct { int wait, x, y, kind, what, count; BOOL told; int picture, w, h; } incoming[8];
+	int stack[3]; // the last stack of buttons' incoming, in order
+	// Pictures the page has ready of pieces of the site, for the ones that
+	// fall from the ceiling (slot + 1, w, h; 0 once one's fallen).
+	struct { int picture, w, h; } pool[6];
 	BOOL rage; // in its last form, drawn from SURFACE_ID_FLINT_RAGE
 	int idle; // cutscene frames without a script to move it on
 	int handLife; // its life when its hand came in
@@ -809,6 +814,7 @@ static int Incoming(int what, int x, int y, int kind, int count, int later, BOOL
 		arena.incoming[i].kind = kind;
 		arena.incoming[i].count = count;
 		arena.incoming[i].told = told;
+		arena.incoming[i].picture = 0;
 		return i;
 	}
 	return -1;
@@ -822,10 +828,14 @@ static void ThrowPiece(int x, int count)
 }
 
 // A piece of the site that just falls in through the top (with its hand or
-// the tipping, so the page has its hands full).
+// the tipping, so the page has its hands full). The page is told, so it can
+// show it coming loose from the site and draw it.
 static void DropPiece(int x)
 {
-	Incoming(INCOMING_PIECE, InRoom(x, PX(20)), 0, Random(0, PIECE_KINDS - 1), 1, 20, TRUE);
+	const int kind = Random(0, PIECE_KINDS - 1);
+	const int i = Incoming(INCOMING_PIECE, InRoom(x, PX(20)), 0, kind, 1, 20, TRUE);
+	if (i >= 0)
+		FlintEmit("fall", kind | i << 8, ScreenX(arena.incoming[i].x));
 }
 
 // Stray cursors in the room, from the site or the level.
@@ -851,8 +861,41 @@ static void ThrowCursors(int x, int count)
 static void ThrowButtons(int dir, int count, int high)
 {
 	const int x = dir == 2 ? arena.left - PX(8) : arena.right + PX(8);
+	if (count > 3)
+		count = 3;
 	for (int i = 0; i < count; i++)
-		Incoming(INCOMING_BUTTON, x, arena.floor - PX(high & (1 << i) ? 34 : 8), dir, high, i * 20, i > 0);
+		arena.stack[i] = Incoming(INCOMING_BUTTON, x, arena.floor - PX(high & (1 << i) ? 34 : 8), dir, high, i * 20, i > 0);
+}
+
+// SetNpChar, and the NPC it made (NULL if the room's full).
+static NPCHAR *Spawn(int code, int x, int y, int xm, int ym, int dir)
+{
+	int n = 0x100;
+	while (n < NPC_MAX && gNPC[n].cond)
+		++n;
+	if (n == NPC_MAX)
+		return NULL;
+	SetNpChar(code, x, y, xm, ym, dir, NULL, n);
+	return &gNPC[n];
+}
+
+// A piece of the site comes down from the ceiling at x: one the page has a
+// picture of ready, if there is one (it's told which, so it can show that
+// coming off the site and draw another), or else just its kind.
+static void Debris(int x)
+{
+	int ready[6];
+	int n = 0;
+	for (int p = 0; p < 6; p++)
+		if (arena.pool[p].picture)
+			ready[n++] = p;
+	NPCHAR *piece = Spawn(NPC_PAGE_PIECE, x, arena.top + PX(10), 0, 0x100, Random(0, PIECE_KINDS - 1));
+	if (piece == NULL || n == 0)
+		return;
+	const int p = ready[Random(0, n - 1)];
+	SetSitePicture(piece, arena.pool[p].picture - 1, 0, arena.pool[p].w, arena.pool[p].h);
+	arena.pool[p].picture = 0;
+	FlintEmit("debris", p, ScreenX(x));
 }
 
 // Motes where something from the site is about to land: down from the
@@ -895,7 +938,7 @@ static void ActIncoming(void)
 			// how many, and which are high (count holds those bits).
 			arena.incoming[i].told = TRUE;
 			if (what == INCOMING_PIECE)
-				FlintEmit("throw", arena.incoming[i].kind | arena.incoming[i].count << 4, ScreenX(x));
+				FlintEmit("throw", arena.incoming[i].kind | arena.incoming[i].count << 4 | i << 8, ScreenX(x));
 			else if (what == INCOMING_CURSOR)
 				FlintEmit("cursor", arena.incoming[i].kind | arena.incoming[i].count << 4, ScreenX(x));
 			else
@@ -916,12 +959,17 @@ static void ActIncoming(void)
 		switch (what)
 		{
 			case INCOMING_PIECE:
-				// It breaks apart coming in: its pieces fall spread out.
+				// It breaks apart coming in: its pieces fall spread out, each a
+				// slice of the page's picture of it.
 				for (int k = 0; k < arena.incoming[i].count; k++)
 				{
-					const int px = InRoom(x + PX((k - (arena.incoming[i].count - 1) / 2) * 36 + Random(-6, 6)), PX(20));
+					const int count = arena.incoming[i].count;
+					const int px = InRoom(x + PX((k - (count - 1) / 2) * 36 + Random(-6, 6)), PX(20));
 					const int xm = (gMC.x > px ? 1 : -1) * Random(0x80, 0x240);
-					SetNpChar(NPC_PAGE_PIECE, px, arena.top + PX(10 + k * 6), xm, 0x100, (arena.incoming[i].kind + k) % PIECE_KINDS, NULL, 0x100);
+					NPCHAR *piece = Spawn(NPC_PAGE_PIECE, px, arena.top + PX(10 + k * 6), xm, 0x100, (arena.incoming[i].kind + k) % PIECE_KINDS);
+					const int w = arena.incoming[i].w;
+					if (piece != NULL && arena.incoming[i].picture)
+						SetSitePicture(piece, arena.incoming[i].picture - 1, k * w / count, (k + 1) * w / count - k * w / count, arena.incoming[i].h);
 				}
 				SetMoteBurst(x, arena.top + PX(6), 6 + arena.incoming[i].count * 3, 0x400, MOTE_WHITE);
 				PlaySoundObject(39, 1);
@@ -936,9 +984,13 @@ static void ActIncoming(void)
 				PlaySoundObject(39, 1);
 				break;
 			case INCOMING_BUTTON:
-				SetNpChar(NPC_WEB_BUTTON, x, arena.incoming[i].y, 0, 0, arena.incoming[i].kind, NULL, 0x100);
+			{
+				NPCHAR *button = Spawn(NPC_WEB_BUTTON, x, arena.incoming[i].y, 0, 0, arena.incoming[i].kind);
+				if (button != NULL && arena.incoming[i].picture)
+					SetSitePicture(button, arena.incoming[i].picture - 1, 0, arena.incoming[i].w, arena.incoming[i].h);
 				PlaySoundObject(39, 1);
 				break;
+			}
 		}
 	}
 }
@@ -1205,7 +1257,7 @@ static void ActLastPhase(NPCHAR *npc)
 		arena.debris = 0;
 		int x = arena.left + PX(Random(8, (arena.right - arena.left) / 0x200 - 8));
 		if (arena.crumble >= 2 && ++arena.debrisCount % 4 == 0)
-			SetNpChar(NPC_PAGE_PIECE, x, arena.top + PX(10), 0, 0x100, Random(0, PIECE_KINDS - 1), NULL, 0x100);
+			Debris(x);
 		else
 			SetNpChar(NPC_BLOCK_SHARD, x, arena.top + PX(4), Random(-0x80, 0x80), 0, Random(0, 1), NULL, 0x100);
 	}
@@ -1425,6 +1477,8 @@ static void Setup(NPCHAR *npc)
 	// Its last form's sheet, which the page writes (a level without one just
 	// doesn't show that form).
 	ReloadBitmap_File("Npc/NpcFlintRage", SURFACE_ID_FLINT_RAGE);
+	// And the page's pictures of the site (it draws them as it goes).
+	ReloadBitmap_File("Npc/NpcSite", SURFACE_ID_FLINT_SITE);
 	// A fresh fight: the page puts anything broken back.
 	FlintEmit("reset", 0, 0);
 }
@@ -2112,8 +2166,42 @@ void FlintBossTestThrow(int what, int a, int b)
 		ThrowCursors(x, b > 0 ? b : 1);
 	else if (what == INCOMING_BUTTON)
 		ThrowButtons(a, b >> 4 > 0 ? b >> 4 : 1, b & 15);
+	else if (what == 4)
+		DropPiece(x);
+	else if (what == 5)
+		Debris(x);
 	else if (gBoss[0].act_no == ACT_OUTSIDE)
 		gBoss[0].act_wait = a ? -1000000 : 0; // 3: out there, it does nothing of its own while a
+}
+
+void FlintSitePicture(int what, int index, int slot, int size)
+{
+	const int w = size & 0xFF;
+	const int h = size >> 8 & 0xFF;
+	const int picture = slot >= 0 && slot < SITE_SLOTS && w > 0 && h > 0 && w <= SITE_CELL_W && h <= SITE_CELL_H ? slot + 1 : 0;
+	int i = -1;
+	if (what == 0 && index >= 0 && index < 8)
+		i = index;
+	else if (what == 1 && index >= 0 && index < 3)
+		i = arena.stack[index];
+	else if (what == 2 && index >= 0 && index < 6)
+	{
+		arena.pool[index].picture = picture;
+		arena.pool[index].w = w;
+		arena.pool[index].h = h;
+		return;
+	}
+	// Only for something still on its way in.
+	if (i < 0 || i >= 8 || arena.incoming[i].wait <= 0 || arena.incoming[i].what != (what == 1 ? INCOMING_BUTTON : INCOMING_PIECE))
+		return;
+	arena.incoming[i].picture = picture;
+	arena.incoming[i].w = w;
+	arena.incoming[i].h = h;
+}
+
+void FlintSiteReload(void)
+{
+	ReloadBitmap_File("Npc/NpcSite", SURFACE_ID_FLINT_SITE);
 }
 
 int FlintBossRage(void)

@@ -34,7 +34,7 @@ for lang in langs:
     flags = ['-std=c++11', '-O0' if args.debug else '-O2', '-fwrapv', '-fno-strict-aliasing',
              '-sUSE_SDL=2', '-sUSE_FREETYPE=1', '-Isrc']
     if lang == 'jp': flags += ['-DJAPANESE']
-    exports=['_main','_web_state','_web_key','_web_pause','_web_fight','_web_flag','_web_fight_stare']
+    exports=['_main','_web_state','_web_key','_web_pause','_web_fight','_web_flag','_web_fight_stare','_web_site_picture','_web_site_reload']
     if args.test_hooks:
         flags += ['-DWEB_TEST_HOOKS']
         exports += ['_web_test_stage','_web_test_credits','_web_test_illustration','_web_test_load','_web_test_stats','_web_test_step','_web_test_credit_step','_web_test_save','_web_test_boss','_web_test_boss_life','_web_test_boss_phase','_web_test_warp','_web_test_count','_web_test_event','_web_test_boss_part','_web_test_life','_web_test_find','_web_test_exp','_web_test_boss_move','_web_test_throw']

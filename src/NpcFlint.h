@@ -60,6 +60,22 @@ extern const NPC_TABLE gFlintNpcTable[NPC_FLINT_COUNT];
 // A burst of motes, e.g. for a teleport.
 void SetMoteBurst(int x, int y, int count, int speed, int colour);
 
+// The page's pictures of the pieces of fl1nt.dev the enderman throws in, so
+// each looks like what it took (Npc/NpcSite.pbm, in SURFACE_ID_FLINT_SITE):
+// SITE_SLOTS cells of SITE_CELL_W x SITE_CELL_H, SITE_COLUMNS to a row, each
+// picture at its cell's top left.
+enum
+{
+	SITE_CELL_W = 48,
+	SITE_CELL_H = 32,
+	SITE_COLUMNS = 8,
+	SITE_SLOTS = 32
+};
+
+// Draws a page piece (369) or webring button (370) as the part of slot's
+// picture from x across, w by h, with a hit box to match.
+void SetSitePicture(NPCHAR *npc, int slot, int x, int w, int h);
+
 void ActNpc361(NPCHAR *npc);
 void ActNpc362(NPCHAR *npc);
 void ActNpc363(NPCHAR *npc);

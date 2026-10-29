@@ -46,6 +46,7 @@ typedef enum Surface_Ids
 	SURFACE_ID_CREDITS_IMAGE = 36,
 	SURFACE_ID_CASTS = 37,
 	SURFACE_ID_FLINT_RAGE = 38, // fl1nt.dev's hidden fight: the enderman's last form (BossFlint.cpp)
+	SURFACE_ID_FLINT_SITE = 39, // and the page's pictures of what it takes off the site (NpcFlint.h)
 	SURFACE_ID_MAX = 40
 } Surface_Ids;
 
