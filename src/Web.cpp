@@ -42,10 +42,6 @@ EMSCRIPTEN_KEEPALIVE void web_fight_stare() {
 EMSCRIPTEN_KEEPALIVE void web_site_picture(int what, int index, int slot, int size) {
     FlintSitePicture(what, index, slot, size);
 }
-// It rewrote Npc/NpcSite.pbm, the sheet they're in.
-EMSCRIPTEN_KEEPALIVE void web_site_reload() {
-    FlintSiteReload();
-}
 EMSCRIPTEN_KEEPALIVE void web_pause(int pause) {
     gKey = gKeyTrg = 0;
     if (pause) emscripten_pause_main_loop(); else emscripten_resume_main_loop();
@@ -78,6 +74,7 @@ EMSCRIPTEN_KEEPALIVE void web_key(int key, int down) {
 #include "NpChar.h"
 #include "MycHit.h"
 #include "NpcHit.h"
+#include "Frame.h"
 #include "MycParam.h"
 extern CREDIT Credit;
 extern "C" {
@@ -132,11 +129,11 @@ EMSCRIPTEN_KEEPALIVE void web_test_boss_part(int part, int cond) {
     if (part >= 0 && part < BOSS_MAX) gBoss[part].cond = cond;
 }
 // Where the first live NPC of a code is, in the engine's fixed point.
-EMSCRIPTEN_KEEPALIVE const char *web_test_find(int code) {
+EMSCRIPTEN_KEEPALIVE const char *web_test_find(int code, int nth) {
     static char found[128];
     std::snprintf(found, sizeof(found), "null");
     for (int i = 0; i < NPC_MAX; i++)
-        if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == code) { std::snprintf(found, sizeof(found), "{\"x\":%d,\"y\":%d,\"surf\":%d,\"w\":%d,\"h\":%d}", gNPC[i].x, gNPC[i].y, (int)gNPC[i].surf, (int)(gNPC[i].rect.right - gNPC[i].rect.left), (int)(gNPC[i].rect.bottom - gNPC[i].rect.top)); break; }
+        if ((gNPC[i].cond & 0x80) && gNPC[i].code_char == code && nth-- <= 0) { std::snprintf(found, sizeof(found), "{\"x\":%d,\"y\":%d,\"sx\":%d,\"sy\":%d,\"surf\":%d,\"w\":%d,\"h\":%d}", gNPC[i].x, gNPC[i].y, (gNPC[i].x - gFrame.x) / 0x200, (gNPC[i].y - gFrame.y) / 0x200, (int)gNPC[i].surf, (int)(gNPC[i].rect.right - gNPC[i].rect.left), (int)(gNPC[i].rect.bottom - gNPC[i].rect.top)); break; }
     return found;
 }
 // How many NPCs of a code are alive.

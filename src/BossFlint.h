@@ -21,11 +21,12 @@ int FlintBossRage(void); // in its last form
 // (as with its hand); 5: one comes down from the ceiling there now.
 void FlintBossTestThrow(int what, int a, int b);
 
-// The page's pictures of pieces of the site (NpcFlint.h's SITE_*): something
-// on its way in uses slot's picture, size w | h << 8 (slot -1: none). what 0:
-// a piece, index from its "throw" or "fall"; 1: the index-th button of the
-// last stack; 2: picture index (0-5) of the ones ready for pieces falling
-// from the ceiling. FlintSiteReload: the page rewrote Npc/NpcSite.pbm.
+// The page's picture of a piece of the site (NpcFlint.h's SITE_*), w by h of
+// the game's pixels (size w | h << 8), its pixels in Npc/NpcSite.rgb: it goes
+// in cell `slot`, and something on its way in is drawn from it (slot -1:
+// nothing is). what 0: a piece, index from its "throw" or "fall" (plus part
+// << 4, for one of the separate pieces it breaks into); 1: the index-th
+// button of the last stack; 2: picture index (0-5) of the ones kept ready for
+// pieces falling from the ceiling.
 void FlintSitePicture(int what, int index, int slot, int size);
-void FlintSiteReload(void);
 void FlintBossSetPhase(int phase);

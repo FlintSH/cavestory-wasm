@@ -209,6 +209,39 @@ BOOL MakeSurface_Generic(int bxsize, int bysize, Surface_Ids surf_no, BOOL bSyst
 	return success;
 }
 
+// fl1nt.dev's hidden fight: the page's pictures of what the enderman takes
+// off the site, put straight into a surface. rgb is w x h of the game's
+// pixels at `detail` times its resolution, row by row, red, green, blue (black
+// see-through); (x, y) is where they go, in the game's pixels.
+void PutSurfacePixels(Surface_Ids surf_no, int x, int y, int w, int h, const unsigned char *rgb, int detail)
+{
+	if (surf_no >= SURFACE_ID_MAX || !surf[surf_no].in_use || detail < 1)
+		return;
+
+	SDL_Surface *surface = surf[surf_no].surface;
+	for (int j = 0; j < h * magnification; ++j)
+	{
+		const int dy = y * magnification + j;
+		if (dy < 0 || dy >= surface->h)
+			continue;
+
+		for (int i = 0; i < w * magnification; ++i)
+		{
+			const int dx = x * magnification + i;
+			if (dx < 0 || dx >= surface->w)
+				continue;
+
+			const unsigned char *from = rgb + ((j * detail / magnification) * w * detail + i * detail / magnification) * 3;
+			unsigned char *to = (unsigned char*)surface->pixels + dy * surface->pitch + dx * 3;
+			to[0] = from[0];
+			to[1] = from[1];
+			to[2] = from[2];
+		}
+	}
+
+	surf[surf_no].needs_updating = TRUE;
+}
+
 static void FlushSurface(Surface_Ids surf_no)
 {
 	unsigned char *raw_pixels;

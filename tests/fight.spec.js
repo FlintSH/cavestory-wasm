@@ -159,29 +159,53 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   const stack=await stepped(2,0,(3<<4)|2,370,3);
   expect(stack).toEqual([['button',0|3<<4|2<<8,0],['thrown',2,85],['thrown',2,105],['thrown',2,125],['landed',3,147]]);
   // What lands looks like what it took: the page gives each thing on its way
-  // in a picture (a slot on its sheet, and a size), and a piece's pieces are
-  // slices of it. A piece that falls in with its hand or the tipping is told
-  // to the page too ("fall"), and bits of the site that come down from the
-  // ceiling use pictures it has ready ("debris" says which). With no picture
-  // they're drawn by kind, from the Void sheet.
+  // in a picture (its pixels at twice the game's resolution, a cell for it,
+  // and its size), and a piece's pieces are slices of it. A piece that falls
+  // in with its hand or the tipping is told to the page too ("fall"), and
+  // bits of the site that come down from the ceiling use pictures it has
+  // ready ("debris" says which). With no picture, or one whose pixels don't
+  // add up, they're drawn by kind from the Void sheet.
   const pictures=await page.evaluate(()=>{
     const SITE=39,VOID=21;
     const find=(code)=>JSON.parse(caveStory.UTF8ToString(caveStory._web_test_find(code)));
     const step=(until)=>{for(let f=0;f<300&&!until();f++)caveStory._web_test_step(1);};
     const look=(o)=>o&&[o.surf===SITE?'site':o.surf===VOID?'void':o.surf,o.w,o.h];
+    const picture=(what,index,slot,w,h,bytes=w*h*12)=>{caveStory.FS.writeFile('/data/Npc/NpcSite.rgb',new Uint8Array(bytes).fill(200));caveStory._web_site_picture(what,index,slot,w|h<<8);};
     caveStory._web_pause(1);
     step(()=>caveStory._web_test_count(369)===0&&caveStory._web_test_count(370)===0);
     const out={};
     said.length=0;
     caveStory._web_test_throw(0,160,3);
     caveStory._web_test_step(1);
-    caveStory._web_site_picture(0,said.find(w=>w[0]==='throw')[1]>>8,5,30|18<<8);
+    picture(0,said.find(w=>w[0]==='throw')[1]>>8,5,30,18);
     step(()=>caveStory._web_test_count(369)===3);
     out.piece=look(find(369));
     step(()=>caveStory._web_test_count(369)===0);
+    // A big picture still breaks on the floor.
+    said.length=0;
+    caveStory._web_test_throw(0,160,1);
+    caveStory._web_test_step(1);
+    picture(0,said.find(w=>w[0]==='throw')[1]>>8,13,64,40);
+    step(()=>caveStory._web_test_count(369)===1);
+    out.big=look(find(369));
+    step(()=>caveStory._web_test_count(369)===0);
+    out.broke=caveStory._web_test_count(369);
+    // Separate pieces, a picture each, whole and side by side.
+    said.length=0;
+    caveStory._web_test_throw(0,160,3);
+    caveStory._web_test_step(1);
+    const apart=said.find(w=>w[0]==='throw')[1]>>8;
+    picture(0,apart,10,20,10);
+    picture(0,apart|1<<4,11,30,12);
+    picture(0,apart|2<<4,12,24,8);
+    step(()=>caveStory._web_test_count(369)===3);
+    const parts=[0,1,2].map(n=>JSON.parse(caveStory.UTF8ToString(caveStory._web_test_find(369,n))));
+    out.apart=parts.map(look);
+    out.gaps=[parts[1].x-parts[0].x,parts[2].x-parts[1].x].map(d=>Math.round(d/0x200));
+    step(()=>caveStory._web_test_count(369)===0);
     caveStory._web_test_throw(2,0,1<<4);
     caveStory._web_test_step(1);
-    caveStory._web_site_picture(1,0,6,44|16<<8);
+    picture(1,0,6,44,16);
     step(()=>caveStory._web_test_count(370)===1);
     out.button=look(find(370));
     step(()=>caveStory._web_test_count(370)===0);
@@ -189,12 +213,12 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
     caveStory._web_test_throw(4,100,0);
     const fall=said.find(w=>w[0]==='fall');
     out.fall=fall&&fall[0];
-    caveStory._web_site_picture(0,fall[1]>>8,7,20|12<<8);
+    picture(0,fall[1]>>8,7,20,12);
     step(()=>caveStory._web_test_count(369)===1);
     out.fell=look(find(369));
     step(()=>caveStory._web_test_count(369)===0);
     said.length=0;
-    caveStory._web_site_picture(2,3,8,16|16<<8);
+    picture(2,3,8,16,16);
     caveStory._web_test_throw(5,200,0);
     out.debris=[said.filter(w=>w[0]==='debris').map(w=>w[1]),look(find(369))];
     step(()=>caveStory._web_test_count(369)===0);
@@ -202,13 +226,18 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
     caveStory._web_test_throw(5,200,0);
     out.plain=[said.filter(w=>w[0]==='debris').length,look(find(369))];
     step(()=>caveStory._web_test_count(369)===0);
+    said.length=0;
     caveStory._web_test_throw(0,160,1);
+    caveStory._web_test_step(1);
+    picture(0,said.find(w=>w[0]==='throw')[1]>>8,9,30,18,30*18*12-1);
     step(()=>caveStory._web_test_count(369)===1);
     out.unpictured=look(find(369))[0];
     caveStory._web_pause(0);
     return out;
   });
-  expect(pictures).toEqual({piece:['site',10,18],button:['site',44,16],fall:'fall',fell:['site',20,12],debris:[[3],['site',16,16]],plain:[0,['void',expect.any(Number),expect.any(Number)]],unpictured:'void'});
+  expect(pictures.gaps.every(d=>d>=20&&d<=40)).toBe(true);
+  delete pictures.gaps;
+  expect(pictures).toEqual({piece:['site',10,18],big:['site',64,40],broke:0,apart:[['site',20,10],['site',30,12],['site',24,8]],button:['site',44,16],fall:'fall',fell:['site',20,12],debris:[[3],['site',16,16]],plain:[0,['void',expect.any(Number),expect.any(Number)]],unpictured:'void'});
   await page.evaluate(()=>caveStory._web_test_throw(3,0,0));
   // Out there it throws pieces of the page in, reaches in or tips the room.
   // Staring at it (the page's cursor resting on it) makes it reach for you;
