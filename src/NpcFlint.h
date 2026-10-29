@@ -61,15 +61,17 @@ extern const NPC_TABLE gFlintNpcTable[NPC_FLINT_COUNT];
 void SetMoteBurst(int x, int y, int count, int speed, int colour);
 
 // The page's pictures of the pieces of fl1nt.dev the enderman throws in, so
-// each looks like what it took (Npc/NpcSite.pbm, in SURFACE_ID_FLINT_SITE):
-// SITE_SLOTS cells of SITE_CELL_W x SITE_CELL_H, SITE_COLUMNS to a row, each
-// picture at its cell's top left.
+// each looks like what it took, in SURFACE_ID_FLINT_SITE: SITE_SLOTS cells of
+// SITE_CELL_W x SITE_CELL_H (the game's pixels), SITE_COLUMNS to a row, each
+// picture at its cell's top left. The page draws them at SITE_DETAIL times
+// the game's resolution, the window's (Npc/NpcSite.rgb: FlintSitePicture).
 enum
 {
-	SITE_CELL_W = 48,
-	SITE_CELL_H = 32,
+	SITE_CELL_W = 64,
+	SITE_CELL_H = 40,
 	SITE_COLUMNS = 8,
-	SITE_SLOTS = 32
+	SITE_SLOTS = 32,
+	SITE_DETAIL = 2
 };
 
 // Draws a page piece (369) or webring button (370) as the part of slot's

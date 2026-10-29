@@ -501,8 +501,15 @@ void SetSitePicture(NPCHAR *npc, int slot, int x, int w, int h)
 	SetRect(npc, left, top, w, h);
 	npc->view.front = npc->view.back = PX(w / 2);
 	npc->view.top = npc->view.bottom = PX(h / 2);
-	npc->hit.front = npc->hit.back = PX(w / 2 > 4 ? w / 2 - 2 : 2);
-	npc->hit.top = npc->hit.bottom = PX(h / 2 > 3 ? h / 2 - 1 : 2);
+	// Its hit box, a bit inside it, but no bigger than the map's collision
+	// can follow (HitNpCharMap looks a block or two around its middle), so
+	// a big one still breaks on the floor, platforms and walls; a bigger one
+	// is looked at a block further out (size 3), and smokes more when shot.
+	const int across = w / 2 - 2;
+	const int down = h / 2 - 1;
+	npc->hit.front = npc->hit.back = PX(across < 2 ? 2 : across > 14 ? 14 : across);
+	npc->hit.top = npc->hit.bottom = PX(down < 2 ? 2 : down > 14 ? 14 : down);
+	npc->size = w > 28 || h > 22 ? 3 : 2;
 }
 
 void ActNpc369(NPCHAR *npc)
