@@ -119,6 +119,8 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   s=await state();
   expect([s.boss.life,s.boss.rage]).toEqual([300,1]);
   await expect.poll(async()=>(await state()).me.flags&2,{timeout:10000}).toBe(2);
+  // (Nothing of its own while these are thrown in.)
+  await page.evaluate(()=>caveStory._web_test_throw(3,1,0));
   // Off the site it also throws visitors' cursors in, which turn up as stray
   // cursors, and webring buttons (NPC 370) that fly straight across the room.
   const cursors=await page.evaluate(()=>caveStory._web_test_count(362));
@@ -132,20 +134,31 @@ test('hidden level: boots into stage 95, reaches lost+found and back, the enderm
   const from=(await button()).x;
   await expect.poll(async()=>(await button()).x,{timeout:2000}).toBeGreaterThan(from+0x2000);
   // A piece that breaks into three, and a stack of three buttons from the
-  // right with the middle one high: one word for each (what, how many, and
-  // for the buttons which are high), then "thrown" as each goes in, shortly
-  // before it's in the room.
+  // right with the middle one high, frame by frame with the game paused: one
+  // word for each (what, how many, and for the buttons which are high), then
+  // "thrown" as each goes in, shortly before it's in the room.
   await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(370)),{timeout:5000}).toBe(0);
-  await page.evaluate(()=>{said.length=0;caveStory._web_test_throw(0,160,3);});
-  await expect.poll(()=>page.evaluate(()=>said.some(w=>w[0]==='throw'&&w[1]>>4===3)),{timeout:2000}).toBe(true);
-  expect(await page.evaluate(()=>said.some(w=>w[0]==='thrown'))).toBe(false);
-  await expect.poll(()=>page.evaluate(()=>said.some(w=>w[0]==='thrown'&&w[1]===0)),{timeout:5000}).toBe(true);
-  expect(await page.evaluate(()=>caveStory._web_test_count(369))).toBe(0);
-  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(369)),{timeout:3000}).toBe(3);
-  await page.evaluate(()=>{said.length=0;caveStory._web_test_throw(2,0,(3<<4)|2);});
-  await expect.poll(()=>page.evaluate(()=>caveStory._web_test_count(370)),{timeout:8000}).toBe(3);
-  const stack=await page.evaluate(()=>said.filter(w=>w[0]==='button'||w[0]==='thrown'));
-  expect(stack).toEqual([['button',0|3<<4|2<<8,expect.any(Number)],['thrown',2,0],['thrown',2,0],['thrown',2,0]]);
+  const stepped=(what,a,b,code,count)=>page.evaluate(([what,a,b,code,count])=>{
+    caveStory._web_pause(1);
+    said.length=0;
+    caveStory._web_test_throw(what,a,b);
+    const seen=[];
+    for(let f=0;f<200;f++){
+      const n=said.length;
+      caveStory._web_test_step(1);
+      for(const w of said.slice(n))seen.push([w[0],w[1],f]);
+      if(caveStory._web_test_count(code)>=count){seen.push(['landed',count,f]);break;}
+    }
+    caveStory._web_pause(0);
+    return seen;
+  },[what,a,b,code,count]);
+  const piece=await stepped(0,160,3,369,3);
+  expect(piece.map(w=>w[0])).toEqual(['throw','thrown','landed']);
+  expect(piece[0][1]>>4).toBe(3);
+  expect([piece[1][2]-piece[0][2],piece[2][2]-piece[1][2]]).toEqual([85,22]);
+  const stack=await stepped(2,0,(3<<4)|2,370,3);
+  expect(stack).toEqual([['button',0|3<<4|2<<8,0],['thrown',2,85],['thrown',2,105],['thrown',2,125],['landed',3,147]]);
+  await page.evaluate(()=>caveStory._web_test_throw(3,0,0));
   // Out there it throws pieces of the page in, reaches in or tips the room.
   // Staring at it (the page's cursor resting on it) makes it reach for you;
   // shooting its hand once it's slammed down hurts it.
