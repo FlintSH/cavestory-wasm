@@ -146,5 +146,6 @@ EMSCRIPTEN_KEEPALIVE const char *web_test_stats() {
     std::snprintf(result,sizeof(result),"{\"mapWidth\":%d,\"mapHeight\":%d,\"bossAction\":%d,\"bossCondition\":%d,\"creditOffset\":%d,\"creditMode\":%d}",gMap.width,gMap.length,gBoss[0].act_no,gBoss[0].cond,Credit.offset,Credit.mode);
     return result;
 }
+EMSCRIPTEN_KEEPALIVE void web_test_throw(int what, int a, int b) { FlintBossTestThrow(what, a, b); }
 }
 #endif

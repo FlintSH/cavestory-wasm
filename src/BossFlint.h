@@ -13,4 +13,8 @@ void FlintBossStare(void);
 // For QA builds: the current phase (1-3), and a way to skip to one.
 int FlintBossPhase(void);
 int FlintBossRage(void); // in its last form
+
+// QA builds: throw something in off the site now (0 a piece at screen x a, 1 a
+// cursor at screen x a, 2 a webring button flying a (0 left, 2 right), high if b).
+void FlintBossTestThrow(int what, int a, int b);
 void FlintBossSetPhase(int phase);
