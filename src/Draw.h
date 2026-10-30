@@ -56,6 +56,7 @@ extern SURFACE surf[SURFACE_ID_MAX];
 
 // fl1nt.dev's hidden fight: pixels put straight into a surface (BossFlint.cpp).
 void PutSurfacePixels(Surface_Ids surf_no, int x, int y, int w, int h, const unsigned char *rgb, int detail);
+int SurfaceColoured(Surface_Ids surf_no, int x, int y, int w, int h, int light);
 
 BOOL Flip_SystemTask(HWND hWnd);
 BOOL StartDirectDraw(int lMagnification, int lColourDepth);
