@@ -242,6 +242,34 @@ void PutSurfacePixels(Surface_Ids surf_no, int x, int y, int w, int h, const uns
 	surf[surf_no].needs_updating = TRUE;
 }
 
+// How much of a rect of a surface (the game's pixels) is coloured in, 0 to
+// 100: its pixels at least `light` bright (0-255: not see-through black, and
+// not an outline or a dark seam).
+int SurfaceColoured(Surface_Ids surf_no, int x, int y, int w, int h, int light)
+{
+	if (surf_no >= SURFACE_ID_MAX || !surf[surf_no].in_use || w <= 0 || h <= 0)
+		return 0;
+
+	SDL_Surface *surface = surf[surf_no].surface;
+	int coloured = 0;
+	for (int j = 0; j < h; ++j)
+	{
+		for (int i = 0; i < w; ++i)
+		{
+			const int dx = (x + i) * magnification;
+			const int dy = (y + j) * magnification;
+			if (dx < 0 || dy < 0 || dx >= surface->w || dy >= surface->h)
+				continue;
+
+			const unsigned char *p = (unsigned char*)surface->pixels + dy * surface->pitch + dx * 3;
+			if ((p[0] * 77 + p[1] * 151 + p[2] * 28) >> 8 >= light)
+				++coloured;
+		}
+	}
+
+	return coloured * 100 / (w * h);
+}
+
 static void FlushSurface(Surface_Ids surf_no)
 {
 	unsigned char *raw_pixels;

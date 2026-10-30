@@ -35,12 +35,17 @@ enum
 	PIECE_KINDS
 };
 
-// Block shard materials, for SetNpChar's direction argument.
+// Block shard materials, for SetNpChar's direction argument. A picture shard
+// is a bit of a pictured page piece, cut from its picture (its surface and
+// rect are set when it's made, and it tumbles by narrowing); its backing is
+// the outline behind it (its parent NPC), which it carries along.
 enum
 {
 	SHARD_END_STONE = 0,
 	SHARD_PURPUR = 1,
-	SHARD_PAGE = 2
+	SHARD_PAGE = 2,
+	SHARD_PICTURE = 3,
+	SHARD_BACKING = 4
 };
 
 // Mote colours, for SetNpChar's direction argument. Add MOTE_TRAVEL for a mote
@@ -77,6 +82,7 @@ enum
 // Draws a page piece (369) or webring button (370) as the part of slot's
 // picture from x across, w by h, with a hit box to match.
 void SetSitePicture(NPCHAR *npc, int slot, int x, int w, int h);
+void SetButtonPicture(NPCHAR *npc, int slot, int w, int h);
 
 void ActNpc361(NPCHAR *npc);
 void ActNpc362(NPCHAR *npc);

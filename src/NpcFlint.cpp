@@ -18,6 +18,7 @@
 #include "WindowsWrapper.h"
 
 #include "Caret.h"
+#include "Draw.h"
 #include "Game.h"
 #include "MyChar.h"
 #include "NpChar.h"
@@ -441,18 +442,31 @@ void ActNpc367(NPCHAR *npc)
 	SetRect(npc, npc->ani_no * 16, 152, 16, 16);
 }
 
-// A piece of a block the enderman threw. Direction picks the material.
+// A piece of a block the enderman threw. Direction picks the material. A bit
+// of a pictured page piece (SHARD_PICTURE) keeps the rect it was cut with and
+// tumbles: it narrows to a sliver and widens again, like a coin turning. Its
+// outline (SHARD_BACKING: a dark square on the Void sheet, at (112, 64), a
+// pixel bigger all round) is drawn behind it, and it moves it with itself.
 void ActNpc368(NPCHAR *npc)
 {
 	if (npc->act_no == 0)
 	{
 		npc->act_no = 1;
-		npc->count1 = npc->direct % 3;
+		npc->count1 = npc->direct % 5;
 		npc->act_wait = Random(28, 44);
 		// Torn-up page comes off fl1nt.dev's own sheet.
-		if (npc->count1 == SHARD_PAGE)
+		if (npc->count1 == SHARD_PAGE || npc->count1 == SHARD_BACKING)
 			npc->surf = SURFACE_ID_LEVEL_SPRITESET_1;
+		if (npc->count1 == SHARD_PICTURE)
+		{
+			npc->count2 = npc->rect.left;
+			npc->tgt_x = npc->rect.right - npc->rect.left;
+		}
 	}
+
+	// (Its bit moves it, and ends it.)
+	if (npc->count1 == SHARD_BACKING)
+		return;
 
 	npc->ym += 0x24;
 	if (npc->ym > 0x500)
@@ -469,14 +483,104 @@ void ActNpc368(NPCHAR *npc)
 
 	if (--npc->act_wait <= 0)
 	{
+		if (npc->count1 == SHARD_PICTURE && npc->pNpc != NULL)
+			npc->pNpc->cond = 0;
 		npc->cond = 0;
 		return;
 	}
 
-	if (npc->count1 == SHARD_PAGE)
+	if (npc->count1 == SHARD_PICTURE)
+	{
+		// Whole, two thirds, a sliver, two thirds: centred where it is.
+		static const int kTurn[4] = {3, 2, 1, 2};
+		const int w = npc->tgt_x;
+		const int h = npc->rect.bottom - npc->rect.top;
+		const int shown = w * kTurn[npc->ani_no] / 3 > 0 ? w * kTurn[npc->ani_no] / 3 : 1;
+		npc->rect.left = npc->count2 + (w - shown) / 2;
+		npc->rect.right = npc->rect.left + shown;
+		npc->view.front = npc->view.back = PX(shown) / 2;
+		if (npc->pNpc != NULL)
+		{
+			NPCHAR *back = npc->pNpc;
+			back->x = npc->x;
+			back->y = npc->y;
+			SetRect(back, 112, 64, shown + 2, h + 2);
+			back->view.front = back->view.back = PX(shown + 2) / 2;
+			back->view.top = back->view.bottom = PX(h + 2) / 2;
+		}
+	}
+	else if (npc->count1 == SHARD_PAGE)
 		SetRect(npc, 80 + npc->ani_no * 8, 64, 8, 8);
 	else
 		SetRect(npc, 64 + (npc->count1 * 4 + npc->ani_no) * 8, 192, 8, 8);
+}
+
+// The first free NPC slot from n on (NPC_MAX if there isn't one).
+static int FreeSlot(int n)
+{
+	while (n < NPC_MAX && gNPC[n].cond)
+		++n;
+	return n;
+}
+
+// Breaks a pictured page piece into bits of its own picture where they were
+// in it, flying off, each outlined: small chips off its edge (its frame and
+// outline: its colours, not pieces of its words), more of them for a bigger
+// piece.
+static void ShatterPicture(NPCHAR *npc)
+{
+	const int w = npc->rect.right - npc->rect.left;
+	const int h = npc->rect.bottom - npc->rect.top;
+	const int size = w < 18 || h < 10 ? 3 : 4;
+	int count = 4 + w * h / 220;
+	if (count > 10)
+		count = 10;
+	for (int i = 0; i < count; i++)
+	{
+		// Its outline first, so it's drawn behind it.
+		const int back = FreeSlot(0x100);
+		const int bit = FreeSlot(back + 1);
+		if (bit >= NPC_MAX)
+			return;
+		// Where it was in the picture (its top left), along one of its
+		// edges a pixel in from its outline (its frame and colours: its
+		// outline's the backing's), somewhere that's mostly coloured in (not
+		// a gap between letters, or an outline or a seam), and so where it
+		// starts.
+		const int lastX = w > size + 1 ? w - size - 1 : 0;
+		const int lastY = h > size + 1 ? h - size - 1 : 0;
+		const int firstX = lastX > 1 ? 1 : 0;
+		const int firstY = lastY > 1 ? 1 : 0;
+		int bx = 0;
+		int by = 0;
+		BOOL found = FALSE;
+		for (int tries = 0; tries < 8 && !found; tries++)
+		{
+			bx = Random(firstX, lastX);
+			by = Random(firstY, lastY);
+			if (Random(0, 1))
+				bx = Random(0, 1) ? firstX : lastX;
+			else
+				by = Random(0, 1) ? firstY : lastY;
+			found = SurfaceColoured(SURFACE_ID_FLINT_SITE, npc->rect.left + bx, npc->rect.top + by, size, size, 56) >= 75;
+		}
+		if (!found)
+			continue;
+		const int dx = bx + size / 2 - w / 2;
+		const int x = npc->x + PX(dx);
+		const int y = npc->y + PX(by + size / 2 - h / 2);
+		const int bw = size < w ? size : w;
+		const int bh = size < h ? size : h;
+		SetNpChar(NPC_BLOCK_SHARD, x, y, 0, 0, SHARD_BACKING, NULL, back);
+		SetRect(&gNPC[back], 112, 64, bw + 2, bh + 2);
+		gNPC[back].view.front = gNPC[back].view.back = PX(bw + 2) / 2;
+		gNPC[back].view.top = gNPC[back].view.bottom = PX(bh + 2) / 2;
+		SetNpChar(NPC_BLOCK_SHARD, x, y, dx * 0x18 + Random(-0x180, 0x180), Random(-0x500, -0x100), SHARD_PICTURE, &gNPC[back], bit);
+		gNPC[bit].surf = SURFACE_ID_FLINT_SITE;
+		SetRect(&gNPC[bit], npc->rect.left + bx, npc->rect.top + by, bw, bh);
+		gNPC[bit].view.front = gNPC[bit].view.back = PX(bw) / 2;
+		gNPC[bit].view.top = gNPC[bit].view.bottom = PX(bh) / 2;
+	}
 }
 
 // A piece of fl1nt.dev the enderman tore off the site and threw in, through
@@ -512,6 +616,15 @@ void SetSitePicture(NPCHAR *npc, int slot, int x, int w, int h)
 	npc->size = w > 28 || h > 22 ? 3 : 2;
 }
 
+// A webring button's picture: as SetSitePicture, but it flies through walls,
+// so its hit box can be all of it but its ends and edges.
+void SetButtonPicture(NPCHAR *npc, int slot, int w, int h)
+{
+	SetSitePicture(npc, slot, 0, w, h);
+	npc->hit.front = npc->hit.back = PX(w / 2 - 8 > 2 ? w / 2 - 8 : 2);
+	npc->hit.top = npc->hit.bottom = PX(h / 2 - 2 > 2 ? h / 2 - 2 : 2);
+}
+
 void ActNpc369(NPCHAR *npc)
 {
 	const int kind = npc->direct % PIECE_KINDS;
@@ -535,11 +648,15 @@ void ActNpc369(NPCHAR *npc)
 	npc->x += npc->xm;
 	npc->y += npc->ym;
 
-	// Breaks on the floor, a platform or a wall.
+	// Breaks on the floor, a platform or a wall: into bits of itself, if it's
+	// pictured, or scraps of page.
 	if (npc->flag & 0xD)
 	{
-		for (int i = 0; i < 6; i++)
-			SetNpChar(NPC_BLOCK_SHARD, npc->x + PX(Random(-8, 8)), npc->y + PX(Random(-4, 4)), Random(-0x300, 0x300), Random(-0x500, -0x100), SHARD_PAGE, NULL, 0x100);
+		if (pictured)
+			ShatterPicture(npc);
+		else
+			for (int i = 0; i < 6; i++)
+				SetNpChar(NPC_BLOCK_SHARD, npc->x + PX(Random(-8, 8)), npc->y + PX(Random(-4, 4)), Random(-0x300, 0x300), Random(-0x500, -0x100), SHARD_PAGE, NULL, 0x100);
 		PlaySoundObject(12, 1);
 		npc->cond = 0;
 		return;
@@ -550,10 +667,11 @@ void ActNpc369(NPCHAR *npc)
 }
 
 // 370: one of the site's 88x31 webring buttons, flung in through the side of
-// the window. It flies straight across the room, through its walls, sinking
-// a little, and is gone. Direction 0 flies left, 2 right. Drawn from the
-// page's picture of that button (SetSitePicture), at half size; or else
-// from the Void sheet, (160, 0): four 32x12 frames of one turning.
+// the window. It flies straight across the room, level, through its walls,
+// and is gone. Direction 0 flies left, 2 right. Drawn from the
+// page's picture of that button (SetSitePicture, then SetButtonPicture: two
+// thirds of its size), or else from the Void sheet, (160, 0): four 32x12
+// frames of one turning.
 void ActNpc370(NPCHAR *npc)
 {
 	if (npc->act_no == 0)
@@ -563,11 +681,9 @@ void ActNpc370(NPCHAR *npc)
 		npc->ym = 0;
 	}
 
-	npc->ym += 0x4;
-	if (npc->ym > 0xC0)
-		npc->ym = 0xC0;
+	// Level, so a low one runs along the floor (not into it) all the way
+	// across, and a high one stays over your head.
 	npc->x += npc->xm;
-	npc->y += npc->ym;
 
 	if (++npc->ani_wait > 2)
 	{

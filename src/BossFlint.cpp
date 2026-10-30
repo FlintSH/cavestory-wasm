@@ -860,15 +860,20 @@ static void ThrowCursors(int x, int count)
 }
 
 // It grabs a stack of the site's webring buttons and flings them in through
-// the side of the window one after another, each low (jump it) or high
-// (stay down) by `high`'s bits. dir is where they fly (0 left, 2 right).
+// the side of the window one after another, kButtonGap frames apart, each
+// low (jump it) or high (stay down) by `high`'s bits. dir is where they fly
+// (0 left, 2 right). A pictured one goes in by its height: a low one's
+// bottom on the floor, a high one's kButtonHigh pixels over it (its hit box
+// as far over Quote's head as a drawn one's).
+static const int kButtonGap = 32;
+static const int kButtonHigh = 25;
 static void ThrowButtons(int dir, int count, int high)
 {
 	const int x = dir == 2 ? arena.left - PX(8) : arena.right + PX(8);
 	if (count > 3)
 		count = 3;
 	for (int i = 0; i < count; i++)
-		arena.stack[i] = Incoming(INCOMING_BUTTON, x, arena.floor - PX(high & (1 << i) ? 34 : 8), dir, high, i * 20, i > 0);
+		arena.stack[i] = Incoming(INCOMING_BUTTON, x, arena.floor - PX(high & (1 << i) ? 34 : 8), dir, high, i * kButtonGap, i > 0);
 }
 
 // SetNpChar, and the NPC it made (NULL if the room's full): from late in
@@ -894,6 +899,17 @@ static NPCHAR *Spawn(int code, int x, int y, int xm, int ym, int dir)
 // A piece of the site comes down from the ceiling at x: one the page has a
 // picture of ready, if there is one (it's told which, so it can show that
 // coming off the site and draw another), or else just its kind.
+// A pictured piece's hit box reaches further up than a drawn one's (14 over
+// its middle for a big one), and starting with it in the ceiling, it'd break
+// there at once: it starts just under the ceiling instead (its top coming
+// out of it).
+static void UnderCeiling(NPCHAR *piece)
+{
+	const int lowest = arena.top + piece->hit.top + PX(1);
+	if (piece->y < lowest)
+		piece->y = lowest;
+}
+
 static void Debris(int x)
 {
 	int ready[6];
@@ -906,8 +922,11 @@ static void Debris(int x)
 		return;
 	const int p = ready[Random(0, n - 1)];
 	SetSitePicture(piece, arena.pool[p].picture - 1, 0, arena.pool[p].w, arena.pool[p].h);
+	UnderCeiling(piece);
+	// (All of it in the room, not half in a wall.)
+	piece->x = InRoom(piece->x, PX(arena.pool[p].w / 2 + 2));
 	arena.pool[p].picture = 0;
-	FlintEmit("debris", p, ScreenX(x));
+	FlintEmit("debris", p, ScreenX(piece->x));
 }
 
 // Piece k of something on its way in: how it's drawn and where it lands. If
@@ -1026,7 +1045,10 @@ static void ActIncoming(void)
 					const int xm = (gMC.x > px ? 1 : -1) * Random(0x80, 0x240);
 					NPCHAR *piece = Spawn(NPC_PAGE_PIECE, px, arena.top + PX(10 + k * 6), xm, 0x100, (arena.incoming[i].kind + k) % PIECE_KINDS);
 					if (piece != NULL && slot >= 0)
+					{
 						SetSitePicture(piece, slot, sx, w, h);
+						UnderCeiling(piece);
+					}
 				}
 				SetMoteBurst(x, arena.top + PX(6), 6 + arena.incoming[i].count * 3, 0x400, MOTE_WHITE);
 				PlaySoundObject(39, 1);
@@ -1044,7 +1066,12 @@ static void ActIncoming(void)
 			{
 				NPCHAR *button = Spawn(NPC_WEB_BUTTON, x, arena.incoming[i].y, 0, 0, arena.incoming[i].kind);
 				if (button != NULL && arena.incoming[i].picture[0])
-					SetSitePicture(button, arena.incoming[i].picture[0] - 1, 0, arena.incoming[i].w[0], arena.incoming[i].h[0]);
+				{
+					const int h = arena.incoming[i].h[0];
+					const BOOL high = arena.incoming[i].y < arena.floor - PX(20);
+					SetButtonPicture(button, arena.incoming[i].picture[0] - 1, arena.incoming[i].w[0], h);
+					button->y = arena.floor - PX(high ? kButtonHigh : 0) - PX(h) / 2;
+				}
 				PlaySoundObject(39, 1);
 				break;
 			}
